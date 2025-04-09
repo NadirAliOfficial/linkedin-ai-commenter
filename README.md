@@ -19,4 +19,4 @@ AI-powered Chrome extension that generates context-aware LinkedIn comments using
 
 ## License
 MIT
-<!-- updated: 2024-11-09-r01 -->
+<!-- updated: 2025-04-09-r01 -->
