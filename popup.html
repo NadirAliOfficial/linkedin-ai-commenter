@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LinkedIn Comment Assistant</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 280px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #ffffff;
+      color: #1d1d1d;
+    }
+
+    /* Header */
+    .header {
+      background: #0a66c2;
+      padding: 14px 16px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-icon {
+      width: 28px;
+      height: 28px;
+      background: #ffffff;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .header-icon svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .header-text h1 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+
+    .header-text p {
+      font-size: 11px;
+      color: rgba(255,255,255,0.75);
+      margin-top: 1px;
+    }
+
+    /* Status pill */
+    .status-section {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: #e6f3e6;
+      color: #057642;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #057642;
+    }
+
+    /* How to use */
+    .section {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #8a8a8a;
+      margin-bottom: 8px;
+    }
+
+    .steps {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .steps li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 12px;
+      color: #444;
+      line-height: 1.4;
+    }
+
+    .step-num {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #0a66c2;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0px;
+    }
+
+    /* Safety note */
+    .safety {
+      padding: 10px 16px;
+      background: #fff8e1;
+      border-top: 1px solid #ffe082;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .safety-icon {
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .safety p {
+      font-size: 11px;
+      color: #795548;
+      line-height: 1.4;
+    }
+
+    /* Footer */
+    .footer {
+      padding: 8px 16px;
+      text-align: center;
+      font-size: 10px;
+      color: #bbb;
+    }
+
+    /* Open LinkedIn button */
+    .open-btn {
+      display: block;
+      width: calc(100% - 32px);
+      margin: 0 16px 12px;
+      padding: 8px;
+      background: #0a66c2;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .open-btn:hover {
+      background: #004182;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24" fill="#0a66c2" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 2H4C2.9 2 2 2.9 2 4V20C2 21.1 2.9 22 4 22H20C21.1 22 22 21.1 22 20V4C22 2.9 21.1 2 20 2ZM8.5 18H6V10H8.5V18ZM7.25 8.75C6.42 8.75 5.75 8.08 5.75 7.25C5.75 6.42 6.42 5.75 7.25 5.75C8.08 5.75 8.75 6.42 8.75 7.25C8.75 8.08 8.08 8.75 7.25 8.75ZM18 18H15.5V13.5C15.5 12.67 14.83 12 14 12C13.17 12 12.5 12.67 12.5 13.5V18H10V10H12.5V11.08C13.14 10.41 14.06 10 15 10C16.66 10 18 11.34 18 13V18Z"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <h1>Comment Assistant</h1>
+      <p>For LinkedIn Feed</p>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div class="status-section">
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      Active on LinkedIn
+    </div>
+  </div>
+
+  <!-- How to use -->
+  <div class="section">
+    <div class="section-title">How to Use</div>
+    <ol class="steps">
+      <li><span class="step-num">1</span> Open your LinkedIn feed and scroll</li>
+      <li><span class="step-num">2</span> Find the Quick Comment bar under any post</li>
+      <li><span class="step-num">3</span> Pick a tone: Support, Insightful, Agree, Question, Congratulate, Challenge, Experience, or Add Value</li>
+      <li><span class="step-num">4</span> Review the generated comment</li>
+      <li><span class="step-num">5</span> Click "Insert Comment" to paste it in the box</li>
+      <li><span class="step-num">6</span> Press LinkedIn's own Post button to publish</li>
+    </ol>
+  </div>
+
+  <!-- Open LinkedIn -->
+  <a class="open-btn" href="https://www.linkedin.com/feed/" target="_blank">
+    Open LinkedIn Feed →
+  </a>
+
+  <!-- Safety note -->
+  <div class="safety">
+    <span class="safety-icon">🔒</span>
+    <p>This extension never posts automatically. You are always in full control.</p>
+  </div>
+
+  <div class="footer">v2.0.0 · Powered by local Ollama · No data leaves your machine</div>
+</body>
+</html>

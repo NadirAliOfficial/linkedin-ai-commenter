@@ -1,0 +1,88 @@
+.lca-wrap {
+  padding: 6px 16px 8px;
+  border-top: 1px solid #e0e0e0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #fff;
+}
+
+.lca-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lca-pill {
+  padding: 3px 11px;
+  font-size: 12px;
+  color: #555;
+  background: #f3f3f3;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  line-height: 1.5;
+}
+
+.lca-pill:hover {
+  background: #0a66c2;
+  color: #fff;
+  border-color: #0a66c2;
+}
+
+.lca-pill:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.lca-out {
+  margin-top: 8px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lca-loading span {
+  color: #999;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.lca-err {
+  color: #c0392b;
+  font-size: 12px;
+}
+
+.lca-text {
+  flex: 1;
+  color: #1d1d1d;
+  line-height: 1.5;
+  min-width: 0;
+}
+
+.lca-act {
+  padding: 3px 12px;
+  font-size: 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  border: none;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.lca-ins {
+  background: #0a66c2;
+  color: #fff;
+}
+
+.lca-ins:hover { background: #004182; }
+.lca-ins.lca-ok { background: #057642; pointer-events: none; }
+
+.lca-retry {
+  background: transparent;
+  color: #777;
+  border: 1px solid #ccc;
+}
+
+.lca-retry:hover { color: #333; border-color: #999; }
