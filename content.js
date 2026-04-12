@@ -132,6 +132,16 @@ Rules:
 
   // ── Text / name extraction ────────────────────────────────────────────────
 
+  // Elements that contain social proof ("X likes this", "X commented") — excluded everywhere
+  const SOCIAL_PROOF_SELS = [
+    ".update-components-header",
+    ".feed-shared-header",
+    ".update-components-actor__sub-description",
+    ".feed-shared-actor__sub-description",
+    ".feed-shared-social-actions",
+    "[data-test-id='social-actions']",
+  ].join(",");
+
   function getPostText(postEl) {
     const tries = [
       ".feed-shared-update-v2__description",
@@ -145,19 +155,12 @@ Rules:
       if (el && el.innerText.trim().length > 10) return el.innerText.trim().slice(0, 500);
     }
     const clone = postEl.cloneNode(true);
-    clone.querySelectorAll("button,script,style,[aria-hidden='true']").forEach(e => e.remove());
+    // Strip social proof headers so the model never sees "X likes this"
+    clone.querySelectorAll(`button,script,style,[aria-hidden='true'],${SOCIAL_PROOF_SELS}`).forEach(e => e.remove());
     return clone.innerText.replace(/\s+/g, " ").trim().slice(0, 500);
   }
 
   function getPosterName(postEl) {
-    // Selectors for the social-proof/activity header — names found here must be skipped
-    const HEADER_SELS = [
-      ".update-components-header",
-      ".feed-shared-header",
-      ".update-components-actor__sub-description",
-      ".feed-shared-actor__sub-description",
-    ];
-
     const actorContainers = [
       ".update-components-actor",
       ".feed-shared-actor",
@@ -170,11 +173,20 @@ Rules:
       ".feed-shared-actor__name",
     ];
 
+    // Find the post content element — the real poster's actor appears BEFORE it in DOM
+    // but AFTER any social-proof header
+    const contentEl = postEl.querySelector(
+      ".update-components-text, .feed-shared-text, .feed-shared-update-v2__description"
+    );
+
     for (const containerSel of actorContainers) {
-      const actorEls = postEl.querySelectorAll(containerSel);
+      const actorEls = [...postEl.querySelectorAll(containerSel)];
       for (const actorEl of actorEls) {
-        // Skip if this actor is inside the social-proof / activity header
-        if (HEADER_SELS.some(h => actorEl.closest(h))) continue;
+        // Skip actors that live inside a social-proof / activity header
+        if (actorEl.closest(SOCIAL_PROOF_SELS)) continue;
+        // Skip actors that appear AFTER the post content in DOM order
+        if (contentEl && actorEl.compareDocumentPosition(contentEl) & Node.DOCUMENT_POSITION_PRECEDING) continue;
+
         for (const s of nameSels) {
           const el = actorEl.querySelector(s);
           const raw = el?.innerText?.trim().split("\n")[0].trim();
