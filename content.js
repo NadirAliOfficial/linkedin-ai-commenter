@@ -142,6 +142,16 @@ Rules:
     "[data-test-id='social-actions']",
   ].join(",");
 
+  const SOCIAL_PROOF_PATTERN = /^.{1,60}?\s+(likes|supports|loves|celebrated|commented|shared|reposted)\s+(this|a post|an article)/im;
+
+  function stripSocialProof(text) {
+    return text
+      .split("\n")
+      .filter(line => !SOCIAL_PROOF_PATTERN.test(line.trim()))
+      .join("\n")
+      .trim();
+  }
+
   function getPostText(postEl) {
     const tries = [
       ".feed-shared-update-v2__description",
@@ -155,9 +165,9 @@ Rules:
       if (el && el.innerText.trim().length > 10) return el.innerText.trim().slice(0, 500);
     }
     const clone = postEl.cloneNode(true);
-    // Strip social proof headers so the model never sees "X likes this"
     clone.querySelectorAll(`button,script,style,[aria-hidden='true'],${SOCIAL_PROOF_SELS}`).forEach(e => e.remove());
-    return clone.innerText.replace(/\s+/g, " ").trim().slice(0, 500);
+    const raw = clone.innerText.replace(/\s+/g, " ").trim();
+    return stripSocialProof(raw).slice(0, 500);
   }
 
   function getPosterName(postEl) {
@@ -193,7 +203,13 @@ Rules:
           if (!raw || raw.length < 2 || raw.length > 60) continue;
           const cleaned = raw.replace(/[•·○●]\s*\d+(st|nd|rd|th)\+?/gi, "").trim();
           const firstName = cleaned.split(/\s+/)[0].replace(/[^a-zA-Z'-]/g, "").trim();
-          if (firstName.length > 1) return firstName;
+          if (firstName.length < 2) continue;
+          // Final guard: if this name only appears in a social-proof sentence, skip it
+          const fullText = postEl.innerText || "";
+          const inSocialProof = new RegExp(`${firstName}[^\\n]{0,40}(likes|supports|loves|commented|celebrated|shared)`, "i").test(fullText);
+          const isActualPoster = new RegExp(`(^|\\n)${firstName}`, "i").test(stripSocialProof(fullText));
+          if (inSocialProof && !isActualPoster) continue;
+          return firstName;
         }
       }
     }
