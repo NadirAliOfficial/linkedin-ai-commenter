@@ -5,57 +5,118 @@
   const MODEL = "llama3.2";
 
   const TONES = [
-    { label: "Support",      type: "support" },
-    { label: "Insightful",   type: "insightful" },
-    { label: "Agree",        type: "agree" },
-    { label: "Question",     type: "question" },
-    { label: "Congratulate", type: "congratulate" },
-    { label: "Challenge",    type: "challenge" },
-    { label: "Experience",   type: "experience" },
-    { label: "Add Value",    type: "addvalue" },
+    { label: "Support",      type: "support",      icon: "🤝" },
+    { label: "Insightful",   type: "insightful",   icon: "💡" },
+    { label: "Agree",        type: "agree",        icon: "👍" },
+    { label: "Question",     type: "question",     icon: "🤔" },
+    { label: "Congratulate", type: "congratulate", icon: "🎉" },
+    { label: "Challenge",    type: "challenge",    icon: "⚡" },
+    { label: "Experience",   type: "experience",   icon: "🎯" },
+    { label: "Add Value",    type: "addvalue",     icon: "➕" },
+    { label: "Funny",        type: "funny",        icon: "😂" },
   ];
 
-  const SYSTEM = `You write short LinkedIn comments.
+  const SYSTEM = `You write punchy one-line LinkedIn comments that feel human, emotional, and real.
 Rules:
-- One sentence only, strictly 8 to 12 words.
-- Flawless grammar, correct word order, and proper punctuation.
-- Professional, natural, human tone.
-- Never address or mention any person's name.
-- No hyphens, no emojis, no hashtags, no exclamation marks.
-- No filler phrases like "Great post", "Well said", "This is so true", or "Absolutely".
-- No surrounding quotes.
+- ONE short sentence. Max 8 words (not counting the name).
+- React to the post — don't summarize it. Show a feeling or sharp thought.
+- Naturally include the poster's first name once — start, middle, or end. Vary it.
+- Use contractions (it's, that's, I've). Sound like a real person, not a robot.
+- No openers: "Great post", "Well said", "So true", "Absolutely", "This is".
+- No hashtags. No quotes around output.
 - Output the comment text only. Nothing else.`;
 
+  const SHOTS = {
+    support: [
+      { role: "user",      content: "Post: Burned out after 3 years of hustle culture. Finally taking a break.\nPoster's first name: Sara\nSupportive comment:" },
+      { role: "assistant", content: "This needed courage, Sara — glad you chose yourself." },
+      { role: "user",      content: "Post: Quit my corporate job to start a business with no safety net.\nPoster's first name: James\nSupportive comment:" },
+      { role: "assistant", content: "James, most people never even get close to that leap." },
+    ],
+    insightful: [
+      { role: "user",      content: "Post: AI is replacing junior developers faster than anyone expected.\nPoster's first name: Priya\nInsightful comment:" },
+      { role: "assistant", content: "Priya, the bar just moved — not disappeared." },
+      { role: "user",      content: "Post: Remote work killed office culture and it's not coming back.\nPoster's first name: Tom\nInsightful comment:" },
+      { role: "assistant", content: "Forcing it back, Tom, is just speeding up the exits." },
+    ],
+    agree: [
+      { role: "user",      content: "Post: Hiring for attitude over credentials transformed how I build teams.\nPoster's first name: Ali\nAgree comment:" },
+      { role: "assistant", content: "Ali, you can teach skills — you can't teach hunger." },
+      { role: "user",      content: "Post: Meetings with no agenda waste everyone's time.\nPoster's first name: Nina\nAgree comment:" },
+      { role: "assistant", content: "No agenda, Nina, means no respect for anyone's time." },
+    ],
+    question: [
+      { role: "user",      content: "Post: We cut our team 30% and productivity went up.\nPoster's first name: Chris\nQuestion comment:" },
+      { role: "assistant", content: "Chris, what did you cut first — headcount or meetings?" },
+      { role: "user",      content: "Post: I replaced performance reviews with weekly check-ins.\nPoster's first name: Mia\nQuestion comment:" },
+      { role: "assistant", content: "How do you handle the tough feedback, Mia?" },
+    ],
+    congratulate: [
+      { role: "user",      content: "Post: After 2 years building in stealth, we just launched.\nPoster's first name: Raj\nCongratulatory comment:" },
+      { role: "assistant", content: "Raj, two years of silence paid off loud." },
+      { role: "user",      content: "Post: Hit $1M ARR without a single paid ad.\nPoster's first name: Leila\nCongratulatory comment:" },
+      { role: "assistant", content: "Seven figures on trust alone, Leila — that's the real flex." },
+    ],
+    challenge: [
+      { role: "user",      content: "Post: Passion is all you need to succeed as an entrepreneur.\nPoster's first name: Dan\nChallenge comment:" },
+      { role: "assistant", content: "Dan, passion without margin is just an expensive hobby." },
+      { role: "user",      content: "Post: College degrees are worthless in tech today.\nPoster's first name: Zara\nChallenge comment:" },
+      { role: "assistant", content: "Some doors still need that key, Zara." },
+    ],
+    experience: [
+      { role: "user",      content: "Post: Leadership is about giving credit, not taking it.\nPoster's first name: Omar\nExperience comment:" },
+      { role: "assistant", content: "Omar, I watched this one thing transform a whole team's energy." },
+      { role: "user",      content: "Post: Customer retention beats acquisition every time.\nPoster's first name: Eva\nExperience comment:" },
+      { role: "assistant", content: "Eva, we almost killed our product chasing the wrong number." },
+    ],
+    addvalue: [
+      { role: "user",      content: "Post: Personal branding on LinkedIn changed my career completely.\nPoster's first name: Sam\nAdd value comment:" },
+      { role: "assistant", content: "Sam, showing up consistently beats going viral once." },
+      { role: "user",      content: "Post: Most startups fail because they build the wrong thing.\nPoster's first name: Lena\nAdd value comment:" },
+      { role: "assistant", content: "Lena, ten user calls would've caught it before the first sprint." },
+    ],
+    funny: [
+      { role: "user",      content: "Post: Woke up at 5am every day for a month for my side project.\nPoster's first name: Mike\nFunny comment:" },
+      { role: "assistant", content: "Mike at 5am vs Mike at 2pm are two different people 😂" },
+      { role: "user",      content: "Post: Just had a 3-hour meeting that could have been an email.\nPoster's first name: Beth\nFunny comment:" },
+      { role: "assistant", content: "Beth, the email would've taken 3 minutes too 😂" },
+    ],
+  };
+
   const TONE_PROMPT = {
-    support:      "Write a short supportive comment about the specific topic in this post.",
-    insightful:   "Write a short insightful observation directly about this post's topic.",
-    agree:        "Write a short comment that agrees with the specific point made in this post.",
-    question:     "Write a short, specific question about the core idea in this post.",
-    congratulate: "Write a short congratulatory comment referencing what was actually achieved.",
-    challenge:    "Write a short, respectful alternative perspective on the specific claim in this post.",
-    experience:   "Write a short comment connecting a professional insight to this post's topic.",
-    addvalue:     "Write a short comment that adds one concrete, relevant point to this post.",
+    support:      "Supportive comment:",
+    insightful:   "Insightful comment:",
+    agree:        "Agree comment:",
+    question:     "Question comment:",
+    congratulate: "Congratulatory comment:",
+    challenge:    "Challenge comment:",
+    experience:   "Experience comment:",
+    addvalue:     "Add value comment:",
+    funny:        "Funny comment:",
   };
 
   // ── Ollama via background worker ─────────────────────────────────────────
 
-  function askOllama(type, postText) {
+  function askOllama(type, postText, posterName) {
+    const nameLine = posterName ? `Poster's first name: ${posterName}` : "";
+    const userMsg = [`Post: ${postText}`, nameLine, TONE_PROMPT[type]].filter(Boolean).join("\n");
     return new Promise((resolve, reject) => {
       try {
         chrome.runtime.sendMessage({
           type: "ollama",
           payload: {
             model: MODEL,
-            system: SYSTEM,
-            prompt: TONE_PROMPT[type] + "\n\nPost: " + postText,
             stream: false,
-            options: { temperature: 0.75, num_predict: 60 },
+            options: { temperature: 0.85, num_predict: 40, num_ctx: 1024, keep_alive: -1 },
+            messages: [
+              { role: "system", content: SYSTEM },
+              ...SHOTS[type],
+              { role: "user", content: userMsg },
+            ],
           },
         }, (resp) => {
-          if (chrome.runtime.lastError) {
-            return reject(new Error("Refresh the page and try again"));
-          }
-          if (!resp || !resp.ok) return reject(new Error(resp ? resp.error : "No response from Ollama"));
+          if (chrome.runtime.lastError) return reject(new Error("Refresh the page and try again"));
+          if (!resp?.ok) return reject(new Error(resp?.error || "No response from Ollama"));
           resolve(clean(resp.text));
         });
       } catch (e) {
@@ -67,14 +128,34 @@ Rules:
   function clean(text) {
     return text
       .replace(/^["'\u201C\u201D]|["'\u201C\u201D]$/g, "")
-      .replace(/-/g, " ")
       .replace(/[\u{1F000}-\u{1FAFF}]/gu, "")
       .replace(/[\u2600-\u27BF]/g, "")
+      .replace(/^(Here'?s?[^:]*:|Sure[,!]?[^:]*:)\s*/i, "")
       .replace(/\s+/g, " ")
       .trim();
   }
 
   // ── Text extraction ───────────────────────────────────────────────────────
+
+  function getPosterName(postEl) {
+    const selectors = [
+      ".update-components-actor__name span[aria-hidden='true']",
+      ".feed-shared-actor__name span[aria-hidden='true']",
+      ".update-components-actor__name",
+      ".feed-shared-actor__name",
+      "a.app-aware-link span[aria-hidden='true']",
+    ];
+    for (const s of selectors) {
+      const el = postEl.querySelector(s);
+      const raw = el?.innerText?.trim().split("\n")[0].trim();
+      if (!raw || raw.length < 2 || raw.length > 60) continue;
+      // Strip LinkedIn degree indicators (• 1st, ○ 3rd+, etc.) and take only first word
+      const cleaned = raw.replace(/[•·○●]\s*\d+(st|nd|rd|th)\+?/gi, "").trim();
+      const firstName = cleaned.split(/\s+/)[0].replace(/[^a-zA-Z'-]/g, "").trim();
+      if (firstName.length > 1) return firstName;
+    }
+    return "";
+  }
 
   function getPostText(postEl) {
     const tries = [
@@ -99,13 +180,20 @@ Rules:
     const wrap = document.createElement("div");
     wrap.className = "lca-wrap";
 
+    const header = document.createElement("div");
+    header.className = "lca-header";
+    header.innerHTML = `<span class="lca-logo">✦</span><span class="lca-title">AI Comment</span>`;
+    wrap.appendChild(header);
+
     const row = document.createElement("div");
     row.className = "lca-row";
 
-    TONES.forEach(({ label, type }) => {
+    TONES.forEach(({ label, type, icon }) => {
       const btn = document.createElement("button");
       btn.className = "lca-pill";
-      btn.textContent = label;
+      btn.dataset.type = type;
+      if (type === "funny") btn.classList.add("lca-pill-funny");
+      btn.innerHTML = `<span class="lca-icon">${icon}</span>${label}`;
       btn.addEventListener("click", () => onTone(type, postEl, wrap));
       row.appendChild(btn);
     });
@@ -122,13 +210,15 @@ Rules:
       wrap.appendChild(out);
     }
 
+    const tone = TONES.find(t => t.type === type);
     wrap.querySelectorAll(".lca-pill").forEach(b => (b.disabled = true));
     out.className = "lca-out lca-loading";
-    out.innerHTML = "<span>Generating...</span>";
+    out.innerHTML = `<span class="lca-spinner"></span><span>Writing ${tone?.label || ""} comment…</span>`;
 
     try {
       const text = getPostText(postEl);
-      const comment = await askOllama(type, text);
+      const name = getPosterName(postEl);
+      const comment = await askOllama(type, text, name);
       // Auto-insert immediately
       triggerCommentBox(wrap);
       autoInsert(comment, out, wrap);
@@ -239,7 +329,7 @@ Rules:
     el.focus();
     el.innerHTML = "";
     const ok = document.execCommand("insertText", false, text);
-    if (!ok || !el.textContent.includes(text)) {
+    if (!ok || !el.textContent.includes(text.slice(0, 10))) {
       const p = document.createElement("p");
       p.textContent = text;
       el.appendChild(p);
