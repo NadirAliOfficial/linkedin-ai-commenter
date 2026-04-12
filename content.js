@@ -5,12 +5,13 @@
 
   // ── Prompts ───────────────────────────────────────────────────────────────
 
-  const SYSTEM = `You write punchy one-line LinkedIn comments that feel human and real.
+  const SYSTEM = `You write short LinkedIn comments that sound like a real person typed them quickly.
 Rules:
 - ONE sentence only. Max 10 words (not counting the name).
-- React to the post — don't summarize it.
+- React to the post with genuine feeling — never summarize it.
 - Include the poster's first name naturally once (start, middle, or end).
-- Use contractions (it's, that's, I've). No filler like "Great post" or "Well said".
+- Use contractions (it's, that's, I've, you're). Sound warm and real.
+- No hyphens ( - ) anywhere. No em dashes. No filler like "Great post" or "Well said".
 - No hashtags. No quotes around output. Output the comment text only.`;
 
   const SHOTS = {
@@ -122,6 +123,7 @@ Rules:
     let t = text
       .replace(/^["'\u201C\u201D]|["'\u201C\u201D]$/g, "")
       .replace(/^(Here'?s?[^:]*:|Sure[,!]?[^:]*:)\s*/i, "")
+      .replace(/\s+[-–—]\s+/g, " ")   // strip hyphens/dashes used as separators
       .replace(/\s+/g, " ")
       .trim();
     if (!keepEmoji) t = t.replace(/[\u{1F000}-\u{1FAFF}]/gu, "").replace(/[\u2600-\u27BF]/g, "");
@@ -148,19 +150,30 @@ Rules:
   }
 
   function getPosterName(postEl) {
-    const sels = [
-      ".update-components-actor__name span[aria-hidden='true']",
-      ".feed-shared-actor__name span[aria-hidden='true']",
+    // Scope search to the post actor container only — not likes/social-proof sections
+    const actorContainers = [
+      ".update-components-actor",
+      ".feed-shared-actor",
+      ".update-components-actor__container",
+      ".feed-shared-actor__container",
+    ];
+    const nameSels = [
+      "span[aria-hidden='true']",
       ".update-components-actor__name",
       ".feed-shared-actor__name",
     ];
-    for (const s of sels) {
-      const el = postEl.querySelector(s);
-      const raw = el?.innerText?.trim().split("\n")[0].trim();
-      if (!raw || raw.length < 2 || raw.length > 60) continue;
-      const cleaned = raw.replace(/[•·○●]\s*\d+(st|nd|rd|th)\+?/gi, "").trim();
-      const firstName = cleaned.split(/\s+/)[0].replace(/[^a-zA-Z'-]/g, "").trim();
-      if (firstName.length > 1) return firstName;
+
+    for (const containerSel of actorContainers) {
+      const actorEl = postEl.querySelector(containerSel);
+      if (!actorEl) continue;
+      for (const s of nameSels) {
+        const el = actorEl.querySelector(s);
+        const raw = el?.innerText?.trim().split("\n")[0].trim();
+        if (!raw || raw.length < 2 || raw.length > 60) continue;
+        const cleaned = raw.replace(/[•·○●]\s*\d+(st|nd|rd|th)\+?/gi, "").trim();
+        const firstName = cleaned.split(/\s+/)[0].replace(/[^a-zA-Z'-]/g, "").trim();
+        if (firstName.length > 1) return firstName;
+      }
     }
     return "";
   }
