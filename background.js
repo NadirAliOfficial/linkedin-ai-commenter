@@ -1,8 +1,5 @@
-chrome.runtime.onInstalled.addListener((details) => {
-  if (details.reason === "install") {
-    console.log("[LCA] Installed v" + chrome.runtime.getManifest().version);
-  }
-});
+importScripts("config.js");
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 const controllers = new Map();
 
@@ -14,14 +11,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const ctrl = new AbortController();
   controllers.set(tabId, ctrl);
 
-  fetch("http://localhost:11434/api/chat", {
+  const { messages, options = {} } = message.payload;
+  const body = {
+    model: "llama-3.3-70b-versatile",
+    messages,
+    temperature: options.temperature ?? 0.65,
+    ...(options.num_predict && options.num_predict > 0 ? { max_tokens: options.num_predict } : {}),
+    stream: false,
+  };
+
+  fetch(GROQ_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(message.payload),
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + GROQ_API_KEY,
+    },
+    body: JSON.stringify(body),
     signal: ctrl.signal,
   })
-    .then(r => { if (!r.ok) throw new Error("Ollama " + r.status); return r.json(); })
-    .then(data => { controllers.delete(tabId); sendResponse({ ok: true, text: data.message?.content || "" }); })
+    .then(r => { if (!r.ok) throw new Error("Groq " + r.status); return r.json(); })
+    .then(data => {
+      controllers.delete(tabId);
+      sendResponse({ ok: true, text: data.choices?.[0]?.message?.content || "" });
+    })
     .catch(err => {
       controllers.delete(tabId);
       if (err.name === "AbortError") return;
@@ -30,15 +42,3 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   return true;
 });
-
-// Warmup
-fetch("http://localhost:11434/api/chat", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    model: "llama3.2",
-    stream: false,
-    messages: [{ role: "user", content: "." }],
-    options: { num_predict: 1, num_ctx: 256, keep_alive: -1 },
-  }),
-}).catch(() => {});
