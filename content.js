@@ -165,7 +165,17 @@ Rules:
       if (el && el.innerText.trim().length > 10) return el.innerText.trim().slice(0, 500);
     }
     const clone = postEl.cloneNode(true);
-    clone.querySelectorAll(`button,script,style,[aria-hidden='true'],${SOCIAL_PROOF_SELS}`).forEach(e => e.remove());
+    clone.querySelectorAll([
+      "button", "script", "style", "[aria-hidden='true']",
+      // social proof
+      ...SOCIAL_PROOF_SELS.split(",").map(s => s.trim()),
+      // comments section — never read other people's comments
+      ".comments-comments-list",
+      ".comment-item",
+      ".feed-shared-main-content__comment-action",
+      ".comments-comment-list",
+      ".comments-comment-item",
+    ].join(",")).forEach(e => e.remove());
     const raw = clone.innerText.replace(/\s+/g, " ").trim();
     return stripSocialProof(raw).slice(0, 500);
   }
@@ -366,13 +376,22 @@ Rules:
   }
 
   function findPostEl(btn) {
+    // Walk up looking for a known LinkedIn post card container
+    const postCardSels = [
+      ".feed-shared-update-v2",
+      ".occludable-update",
+      "[data-urn]",
+    ];
     let node = btn.parentElement;
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 15; i++) {
       if (!node || node === document.body) break;
-      if (node.querySelector("span[dir='ltr'], span.break-words, p")) return node;
+      if (postCardSels.some(s => node.matches?.(s))) return node;
       node = node.parentElement;
     }
-    return btn.parentElement;
+    // Fallback: walk up 4 levels from the action bar (tight scope, avoids comments)
+    let fallback = btn;
+    for (let i = 0; i < 4; i++) fallback = fallback.parentElement || fallback;
+    return fallback;
   }
 
   document.addEventListener("click", (e) => {
