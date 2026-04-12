@@ -3,6 +3,7 @@
 
   const PROCESSED_ATTR = "data-lca-done";
   const MODEL = "llama3.2";
+  const seenComments = new WeakMap(); // wrap → Set<string> for cycling retry
 
   const TONES = [
     { label: "Support",      type: "support",      icon: "🤝" },
@@ -97,9 +98,27 @@ Rules:
 
   // ── Ollama via background worker ─────────────────────────────────────────
 
-  function askOllama(type, postText, posterName) {
+  // ── Language detection (simple heuristic) ───────────────────────────────
+  function detectLanguage(text) {
+    if (/[\u0600-\u06FF]/.test(text)) return "Arabic or Urdu";
+    if (/[\u0900-\u097F]/.test(text)) return "Hindi";
+    if (/[\u4E00-\u9FFF]/.test(text)) return "Chinese";
+    if (/[\u0400-\u04FF]/.test(text)) return "Russian";
+    const spanishWords = /\b(de|la|el|en|que|por|con|una|los|las|del|para|como|pero|más|muy)\b/gi;
+    if ((text.match(spanishWords) || []).length >= 3) return "Spanish";
+    return "English";
+  }
+
+  function askOllama(type, postText, posterName, seen = new Set()) {
     const nameLine = posterName ? `Poster's first name: ${posterName}` : "";
-    const userMsg = [`Post: ${postText}`, nameLine, TONE_PROMPT[type]].filter(Boolean).join("\n");
+    const lang     = detectLanguage(postText);
+    const langLine = lang !== "English" ? `Reply in ${lang}.` : "";
+    const avoidLine = seen.size
+      ? `Do NOT write any of these (must be different):\n${[...seen].map(s => `- ${s}`).join("\n")}`
+      : "";
+    const userMsg = [`Post: ${postText}`, nameLine, langLine, avoidLine, TONE_PROMPT[type]]
+      .filter(Boolean).join("\n");
+
     return new Promise((resolve, reject) => {
       try {
         chrome.runtime.sendMessage({
@@ -107,7 +126,7 @@ Rules:
           payload: {
             model: MODEL,
             stream: false,
-            options: { temperature: 0.85, num_predict: 40, num_ctx: 1024, keep_alive: -1 },
+            options: { temperature: 0.9, num_predict: 40, num_ctx: 1024, keep_alive: -1 },
             messages: [
               { role: "system", content: SYSTEM },
               ...SHOTS[type],
@@ -117,7 +136,7 @@ Rules:
         }, (resp) => {
           if (chrome.runtime.lastError) return reject(new Error("Refresh the page and try again"));
           if (!resp?.ok) return reject(new Error(resp?.error || "No response from Ollama"));
-          resolve(clean(resp.text));
+          resolve(clean(resp.text, type === "funny"));
         });
       } catch (e) {
         reject(new Error("Refresh the page and try again"));
@@ -125,14 +144,34 @@ Rules:
     });
   }
 
-  function clean(text) {
-    return text
+  function clean(text, keepEmoji = false) {
+    let t = text
       .replace(/^["'\u201C\u201D]|["'\u201C\u201D]$/g, "")
-      .replace(/[\u{1F000}-\u{1FAFF}]/gu, "")
-      .replace(/[\u2600-\u27BF]/g, "")
       .replace(/^(Here'?s?[^:]*:|Sure[,!]?[^:]*:)\s*/i, "")
       .replace(/\s+/g, " ")
       .trim();
+    if (!keepEmoji) {
+      t = t.replace(/[\u{1F000}-\u{1FAFF}]/gu, "").replace(/[\u2600-\u27BF]/g, "");
+    }
+    return t;
+  }
+
+  // ── Auto-detect best tone from post text ─────────────────────────────────
+  function autoDetectTone(text) {
+    const t = text.toLowerCase();
+    if (/\b(congratulat|excited to (share|announce)|thrilled|just (got|joined|launched|hired|promoted)|new role|proud to|milestone|achievement|offer)\b/.test(t))
+      return "congratulate";
+    if (/\b(unpopular opinion|controversial|i disagree|myth|wrong about|actually|but wait)\b/.test(t))
+      return "challenge";
+    if ((/\?/.test(t) && t.length < 200) || /\b(what do you think|your thoughts|curious|wonder)\b/.test(t))
+      return "question";
+    if (/\b(i (learned|realized|discovered|failed|struggled|lost|faced|went through|made it|survived))\b/.test(t))
+      return "experience";
+    if (/\b(tip|lesson|key to|secret|mistake|avoid|should|must|always|never|here'?s how)\b/.test(t))
+      return "addvalue";
+    if (/\b(support|help|burnout|mental health|hard time|difficult|tough|challeng)\b/.test(t))
+      return "support";
+    return "insightful";
   }
 
   // ── Text extraction ───────────────────────────────────────────────────────
@@ -180,6 +219,9 @@ Rules:
     const wrap = document.createElement("div");
     wrap.className = "lca-wrap";
 
+    const postText    = getPostText(postEl);
+    const suggested   = autoDetectTone(postText);
+
     const header = document.createElement("div");
     header.className = "lca-header";
     header.innerHTML = `<span class="lca-logo">✦</span><span class="lca-title">AI Comment</span>`;
@@ -192,8 +234,9 @@ Rules:
       const btn = document.createElement("button");
       btn.className = "lca-pill";
       btn.dataset.type = type;
-      if (type === "funny") btn.classList.add("lca-pill-funny");
-      btn.innerHTML = `<span class="lca-icon">${icon}</span>${label}`;
+      if (type === "funny")    btn.classList.add("lca-pill-funny");
+      if (type === suggested)  btn.classList.add("lca-pill-suggested");
+      btn.innerHTML = `<span class="lca-icon">${icon}</span>${label}${type === suggested ? ' <span class="lca-suggested-dot"></span>' : ""}`;
       btn.addEventListener("click", () => onTone(type, postEl, wrap));
       row.appendChild(btn);
     });
@@ -203,87 +246,99 @@ Rules:
   }
 
   async function onTone(type, postEl, wrap) {
-    let out = wrap.querySelector(".lca-out");
-    if (!out) {
-      out = document.createElement("div");
-      out.className = "lca-out";
-      wrap.appendChild(out);
-    }
+    // Remove old output
+    wrap.querySelectorAll(".lca-out, .lca-variations").forEach(el => el.remove());
 
-    const tone = TONES.find(t => t.type === type);
+    const loading = document.createElement("div");
+    loading.className = "lca-out lca-loading";
+    loading.innerHTML = `<span class="lca-spinner"></span><span>Writing 3 variations…</span>`;
+    wrap.appendChild(loading);
     wrap.querySelectorAll(".lca-pill").forEach(b => (b.disabled = true));
-    out.className = "lca-out lca-loading";
-    out.innerHTML = `<span class="lca-spinner"></span><span>Writing ${tone?.label || ""} comment…</span>`;
+
+    const text = getPostText(postEl);
+    const name = getPosterName(postEl);
+
+    // Seen comments for cycling retry
+    if (!seenComments.has(wrap)) seenComments.set(wrap, new Set());
+    const seen = seenComments.get(wrap);
 
     try {
-      const text = getPostText(postEl);
-      const name = getPosterName(postEl);
-      const comment = await askOllama(type, text, name);
-      // Auto-insert immediately
-      triggerCommentBox(wrap);
-      autoInsert(comment, out, wrap);
+      // Generate 3 variations in parallel
+      const results = await Promise.all([
+        askOllama(type, text, name, seen),
+        askOllama(type, text, name, seen),
+        askOllama(type, text, name, seen),
+      ]);
+
+      // Deduplicate
+      const unique = [...new Set(results.filter(Boolean))];
+      unique.forEach(c => seen.add(c));
+
+      loading.remove();
+      showVariations(unique, type, wrap);
     } catch (err) {
-      out.className = "lca-out lca-err";
-      out.textContent = err.message;
+      loading.className = "lca-out lca-err";
+      loading.textContent = err.message;
       wrap.querySelectorAll(".lca-pill").forEach(b => (b.disabled = false));
     }
   }
 
-  function autoInsert(comment, out, wrap) {
-    let tries = 0;
-    const t = setInterval(() => {
-      tries++;
-      const input = findInput(wrap);
-      if (input) {
-        clearInterval(t);
-        pasteInto(input, comment);
-        showDone(out, comment, wrap);
-      } else if (tries >= 25) {
-        clearInterval(t);
-        // Fallback: show Insert button scoped to this post
-        out.className = "lca-out lca-done";
-        out.innerHTML = "";
-        const txt = document.createElement("span");
-        txt.className = "lca-text";
-        txt.textContent = comment;
-        out.appendChild(txt);
-        const ins = document.createElement("button");
-        ins.className = "lca-act lca-ins";
-        ins.textContent = "Insert";
-        ins.addEventListener("click", () => {
-          triggerCommentBox(wrap);
-          setTimeout(() => {
-            const input = findInput(wrap);
-            if (input) { pasteInto(input, comment); ins.textContent = "Done"; ins.className = "lca-act lca-ins lca-ok"; }
-          }, 700);
-        });
-        out.appendChild(ins);
-        appendRetry(out, wrap);
-        wrap.querySelectorAll(".lca-pill").forEach(b => (b.disabled = false));
-      }
-    }, 200);
-  }
+  function showVariations(comments, type, wrap) {
+    const container = document.createElement("div");
+    container.className = "lca-variations";
 
-  function showDone(out, comment, wrap) {
-    out.className = "lca-out lca-done";
-    out.innerHTML = "";
-    const txt = document.createElement("span");
-    txt.className = "lca-text";
-    txt.textContent = comment;
-    out.appendChild(txt);
-    appendRetry(out, wrap);
-    wrap.querySelectorAll(".lca-pill").forEach(b => (b.disabled = false));
-  }
+    comments.forEach((comment, i) => {
+      const card = document.createElement("div");
+      card.className = "lca-card";
 
-  function appendRetry(out, wrap) {
+      // Editable text area
+      const txt = document.createElement("div");
+      txt.className = "lca-text";
+      txt.contentEditable = "true";
+      txt.textContent = comment;
+      txt.spellcheck = true;
+      card.appendChild(txt);
+
+      // Actions row
+      const actions = document.createElement("div");
+      actions.className = "lca-card-actions";
+
+      const ins = document.createElement("button");
+      ins.className = "lca-act lca-ins";
+      ins.textContent = "Use this";
+      ins.addEventListener("click", () => {
+        const finalText = txt.textContent.trim();
+        triggerCommentBox(wrap);
+        setTimeout(() => {
+          const input = findInput(wrap);
+          if (input) {
+            pasteInto(input, finalText);
+            ins.textContent = "✓ Inserted";
+            ins.className = "lca-act lca-ins lca-ok";
+          }
+        }, 400);
+      });
+
+      actions.appendChild(ins);
+      card.appendChild(actions);
+      container.appendChild(card);
+    });
+
+    // Retry row
+    const retryRow = document.createElement("div");
+    retryRow.className = "lca-retry-row";
     const retry = document.createElement("button");
     retry.className = "lca-act lca-retry";
-    retry.textContent = "Retry";
+    retry.textContent = "↺ New variations";
     retry.addEventListener("click", () => {
-      out.remove();
-      wrap.querySelectorAll(".lca-pill").forEach(b => (b.disabled = false));
+      container.remove();
+      onTone(type, wrap._postEl, wrap);
     });
-    out.appendChild(retry);
+    retryRow.appendChild(retry);
+    container.appendChild(retryRow);
+
+    wrap.appendChild(container);
+    wrap.querySelectorAll(".lca-pill").forEach(b => (b.disabled = false));
   }
 
   // ── Insert into LinkedIn comment box ─────────────────────────────────────
@@ -401,6 +456,7 @@ Rules:
       }
 
       const panel = buildPanel(postEl || bar.parentElement);
+      panel._postEl = postEl || bar.parentElement;
       bar.parentNode.insertBefore(panel, bar.nextSibling);
     });
   }

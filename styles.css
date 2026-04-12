@@ -79,6 +79,28 @@
   color: #fff;
 }
 
+/* Auto-suggested pill — blue glow */
+.lca-pill-suggested {
+  border-color: #0a66c2;
+  color: #0a66c2;
+  font-weight: 600;
+}
+
+.lca-pill-suggested:hover {
+  background: #0a66c2;
+  color: #fff;
+}
+
+.lca-suggested-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  background: #0a66c2;
+  border-radius: 50%;
+  margin-left: 3px;
+  vertical-align: middle;
+}
+
 .lca-icon {
   font-size: 13px;
   line-height: 1;
@@ -165,3 +187,47 @@
 }
 
 .lca-retry:hover { color: #333; border-color: #999; }
+
+/* ── 3 Variations ──────────────────────────────────────────────────────────── */
+
+.lca-variations {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.lca-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  transition: border-color 0.12s;
+}
+
+.lca-card:focus-within {
+  border-color: #0a66c2;
+}
+
+.lca-card .lca-text {
+  display: block;
+  width: 100%;
+  color: #1d1d1d;
+  font-size: 13px;
+  line-height: 1.5;
+  outline: none;
+  cursor: text;
+  min-height: 20px;
+}
+
+.lca-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.lca-retry-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 2px;
+}
