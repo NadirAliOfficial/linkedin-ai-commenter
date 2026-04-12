@@ -150,7 +150,14 @@ Rules:
   }
 
   function getPosterName(postEl) {
-    // Scope search to the post actor container only — not likes/social-proof sections
+    // Selectors for the social-proof/activity header — names found here must be skipped
+    const HEADER_SELS = [
+      ".update-components-header",
+      ".feed-shared-header",
+      ".update-components-actor__sub-description",
+      ".feed-shared-actor__sub-description",
+    ];
+
     const actorContainers = [
       ".update-components-actor",
       ".feed-shared-actor",
@@ -164,15 +171,18 @@ Rules:
     ];
 
     for (const containerSel of actorContainers) {
-      const actorEl = postEl.querySelector(containerSel);
-      if (!actorEl) continue;
-      for (const s of nameSels) {
-        const el = actorEl.querySelector(s);
-        const raw = el?.innerText?.trim().split("\n")[0].trim();
-        if (!raw || raw.length < 2 || raw.length > 60) continue;
-        const cleaned = raw.replace(/[•·○●]\s*\d+(st|nd|rd|th)\+?/gi, "").trim();
-        const firstName = cleaned.split(/\s+/)[0].replace(/[^a-zA-Z'-]/g, "").trim();
-        if (firstName.length > 1) return firstName;
+      const actorEls = postEl.querySelectorAll(containerSel);
+      for (const actorEl of actorEls) {
+        // Skip if this actor is inside the social-proof / activity header
+        if (HEADER_SELS.some(h => actorEl.closest(h))) continue;
+        for (const s of nameSels) {
+          const el = actorEl.querySelector(s);
+          const raw = el?.innerText?.trim().split("\n")[0].trim();
+          if (!raw || raw.length < 2 || raw.length > 60) continue;
+          const cleaned = raw.replace(/[•·○●]\s*\d+(st|nd|rd|th)\+?/gi, "").trim();
+          const firstName = cleaned.split(/\s+/)[0].replace(/[^a-zA-Z'-]/g, "").trim();
+          if (firstName.length > 1) return firstName;
+        }
       }
     }
     return "";
