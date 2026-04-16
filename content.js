@@ -13,6 +13,7 @@ Rules:
 - If a name is provided, use ONLY that exact name once, naturally placed. Never use any other name from the post.
 - If no name is provided, write without any name.
 - Use contractions freely. Sound like a human, not a bot.
+- NEVER use these generic phrases (they apply to any post and mean nothing): "change everything", "going to change everything", "this is everything", "needed to hear this", "so important", "so powerful", "this hits different", "couldn't agree more", "love this", "so true", "preach", "this is gold", "dropping gems", "absolutely this".
 - No hyphens, no em dashes, no filler like "Great post", "Well said", "Congrats", "Amazing", "Inspiring".
 - No hashtags. No quotes around output. Output only the comment text.`;
 
@@ -86,6 +87,19 @@ Rules:
 
   // ── Ollama ────────────────────────────────────────────────────────────────
 
+  // Detect generic phrases that could apply to any post
+  const GENERIC_PATTERNS = [
+    /change everything/i, /going to change/i, /this is everything/i,
+    /needed to hear this/i, /so important/i, /so powerful/i,
+    /this hits different/i, /couldn'?t agree more/i, /love this/i,
+    /so true/i, /^preach/i, /this is gold/i, /dropping gems/i,
+    /absolutely this/i, /well said/i, /great post/i, /amazing post/i,
+    /inspiring post/i, /^congrats?\b/i, /^congratulations\b/i,
+  ];
+  function isGeneric(comment) {
+    return GENERIC_PATTERNS.some(p => p.test(comment));
+  }
+
   // Sanity check: comment must share at least 2 meaningful words with the post
   function isRelevant(comment, postText) {
     const stopWords = new Set(["the","a","an","is","in","on","of","to","and","or","that","this","it","for","with","be","was","are","have","has","i","you","we","they","but","not","so","as","at","by","from","up","do","if","my","your","just","been","than","had","can","its","who","what","when","will","would","could","should","know","like","think","make","time","more","also","very","even","here","well","good","work","need","want","take"]);
@@ -133,11 +147,14 @@ Rules:
 
     let comment = await sendOllamaRequest(userMsg, tone);
 
-    // Retry up to 2 more times if off-topic — always keep the best result
-    if (!isRelevant(comment, postText)) {
+    const isGood = (c) => isRelevant(c, postText) && !isGeneric(c);
+
+    // Retry up to 2 more times if off-topic or generic
+    if (!isGood(comment)) {
       for (let i = 0; i < 2; i++) {
         const retry = await sendOllamaRequest(userMsg, tone);
-        if (isRelevant(retry, postText)) { comment = retry; break; }
+        if (isGood(retry)) { comment = retry; break; }
+        if (i === 1 && isRelevant(retry, postText)) comment = retry; // take relevant-but-generic over irrelevant
       }
     }
 
