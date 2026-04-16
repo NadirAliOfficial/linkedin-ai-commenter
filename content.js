@@ -5,14 +5,15 @@
 
   // ── Prompts ───────────────────────────────────────────────────────────────
 
-  const SYSTEM = `Write a single LinkedIn comment that sounds like a real person — natural, warm, specific to the post.
+  const SYSTEM = `Write a single LinkedIn comment that sounds like a real person — natural, warm, and directly tied to what the post actually says.
 Rules:
 - ONE complete sentence. Between 12 and 18 words total (including the name).
+- MUST reference a specific fact, detail, situation, or word from the post — never write something generic that could apply to any post.
 - React with genuine feeling. Do not summarize the post.
 - If a name is provided, use ONLY that exact name once, naturally placed. Never use any other name from the post.
 - If no name is provided, write without any name.
 - Use contractions freely. Sound like a human, not a bot.
-- No hyphens, no em dashes, no filler like "Great post", "Well said", "Congrats", "Amazing".
+- No hyphens, no em dashes, no filler like "Great post", "Well said", "Congrats", "Amazing", "Inspiring".
 - No hashtags. No quotes around output. Output only the comment text.`;
 
   const SHOTS = {
@@ -85,12 +86,13 @@ Rules:
 
   // ── Ollama ────────────────────────────────────────────────────────────────
 
-  // Sanity check: comment should share at least 1 meaningful word with the post
+  // Sanity check: comment must share at least 2 meaningful words with the post
   function isRelevant(comment, postText) {
-    const stopWords = new Set(["the","a","an","is","in","on","of","to","and","or","that","this","it","for","with","be","was","are","have","has","i","you","we","they","but","not","so","as","at","by","from","up","do","if","my","your","just","been","than","had","can","its","who","what","when","will","would","could","should"]);
+    const stopWords = new Set(["the","a","an","is","in","on","of","to","and","or","that","this","it","for","with","be","was","are","have","has","i","you","we","they","but","not","so","as","at","by","from","up","do","if","my","your","just","been","than","had","can","its","who","what","when","will","would","could","should","know","like","think","make","time","more","also","very","even","here","well","good","work","need","want","take"]);
     const postWords = new Set(postText.toLowerCase().match(/[a-z]{4,}/g)?.filter(w => !stopWords.has(w)) || []);
     const commentWords = (comment.toLowerCase().match(/[a-z]{4,}/g) || []).filter(w => !stopWords.has(w));
-    return commentWords.some(w => postWords.has(w));
+    const matches = commentWords.filter(w => postWords.has(w)).length;
+    return matches >= 2 || (postWords.size < 8 && matches >= 1); // short posts get 1-word pass
   }
 
   function sendOllamaRequest(userMsg, tone) {
@@ -131,10 +133,12 @@ Rules:
 
     let comment = await sendOllamaRequest(userMsg, tone);
 
-    // If comment seems completely off-topic, retry once with a higher-temperature nudge
+    // Retry up to 2 more times if off-topic — always keep the best result
     if (!isRelevant(comment, postText)) {
-      const retry = await sendOllamaRequest(userMsg, tone);
-      if (isRelevant(retry, postText)) comment = retry;
+      for (let i = 0; i < 2; i++) {
+        const retry = await sendOllamaRequest(userMsg, tone);
+        if (isRelevant(retry, postText)) { comment = retry; break; }
+      }
     }
 
     return comment;
