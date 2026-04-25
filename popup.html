@@ -215,12 +215,34 @@
     Open LinkedIn Feed →
   </a>
 
+  <!-- Stats -->
+  <div class="section">
+    <div class="section-title">Performance Stats</div>
+    <div id="stats-body" style="font-size:11px;color:#aaa;">Loading…</div>
+  </div>
+
+  <!-- Analyze & Improve -->
+  <div class="section" id="analyze-section" style="display:none;">
+    <div class="section-title">AI Self-Improvement</div>
+    <p style="font-size:11px;color:#666;margin-bottom:8px;line-height:1.4;">Groq will review your failure log and generate new rules to improve comment quality.</p>
+    <button id="analyze-btn" style="width:100%;background:#0a66c2;color:#fff;border:none;border-radius:20px;padding:7px;font-size:12px;font-weight:600;cursor:pointer;">Analyze failures</button>
+    <div id="analyze-result" style="margin-top:8px;display:none;"></div>
+  </div>
+
+  <!-- Current learned rules -->
+  <div class="section" id="rules-section" style="display:none;">
+    <div class="section-title">Active learned rules</div>
+    <div id="rules-body" style="font-size:11px;color:#333;white-space:pre-wrap;line-height:1.5;background:#f0f7ff;border-radius:6px;padding:7px 9px;margin-bottom:6px;"></div>
+    <button id="clear-rules-btn" style="font-size:10px;color:#bbb;background:none;border:none;cursor:pointer;padding:0;">Remove learned rules</button>
+  </div>
+
   <!-- Safety note -->
   <div class="safety">
     <span class="safety-icon">🔒</span>
     <p>This extension never posts automatically. You are always in full control.</p>
   </div>
 
-  <div class="footer">v2.0.0 · Powered by local Ollama · No data leaves your machine</div>
+  <div class="footer">v2.0.0 · Powered by Groq API</div>
+  <script src="popup.js"></script>
 </body>
 </html>

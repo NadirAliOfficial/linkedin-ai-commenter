@@ -6,12 +6,14 @@
 
   "permissions": [
     "activeTab",
-    "scripting"
+    "scripting",
+    "storage"
   ],
 
   "host_permissions": [
     "https://www.linkedin.com/*",
-    "https://api.groq.com/*"
+    "https://api.groq.com/*",
+    "http://localhost:7331/*"
   ],
 
   "content_scripts": [
