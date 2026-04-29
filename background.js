@@ -3,11 +3,16 @@ const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 const controllers = new Map();
 
-function groqHeaders() {
-  return { "Content-Type": "application/json", "Authorization": "Bearer " + getGroqKey() };
+function getUserKey() {
+  return new Promise(resolve => {
+    chrome.storage.local.get({ lca_groq_key: "" }, ({ lca_groq_key }) => {
+      resolve(lca_groq_key.trim() || null);
+    });
+  });
 }
 
 async function callGroq(messages, { temperature = 0.65, max_tokens, signal } = {}) {
+  const userKey = await getUserKey();
   const body = {
     model: "llama-3.3-70b-versatile",
     messages,
@@ -16,14 +21,15 @@ async function callGroq(messages, { temperature = 0.65, max_tokens, signal } = {
     stream: false,
   };
   async function tryFetch(attempt) {
+    const key = userKey || getGroqKey();
     const r = await fetch(GROQ_URL, {
       method: "POST",
-      headers: groqHeaders(),
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
       body: JSON.stringify(body),
       signal,
     });
     if (!r.ok) {
-      if (r.status === 429) {
+      if (r.status === 429 && !userKey) {
         rotateGroqKey();
         if (attempt < GROQ_API_KEYS.length) return tryFetch(attempt + 1);
         const wait = r.headers.get("retry-after") || "60";

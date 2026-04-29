@@ -1,4 +1,33 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // ── API Key ───────────────────────────────────────────────────────────────
+  const keyInput = document.getElementById("api-key-input");
+  const keyStatus = document.getElementById("key-status");
+
+  chrome.storage.local.get({ lca_groq_key: "" }, ({ lca_groq_key }) => {
+    if (lca_groq_key) {
+      keyInput.value = lca_groq_key;
+      keyStatus.innerHTML = `<span style="color:#057642;font-weight:600;">✓ Using your key</span>`;
+    }
+  });
+
+  document.getElementById("save-key-btn").addEventListener("click", () => {
+    const val = keyInput.value.trim();
+    if (!val) {
+      keyStatus.innerHTML = `<span style="color:#ef4444;">Enter a key first.</span>`;
+      return;
+    }
+    chrome.storage.local.set({ lca_groq_key: val }, () => {
+      keyStatus.innerHTML = `<span style="color:#057642;font-weight:600;">✓ Saved — takes effect immediately.</span>`;
+    });
+  });
+
+  document.getElementById("clear-key-btn").addEventListener("click", () => {
+    chrome.storage.local.remove("lca_groq_key", () => {
+      keyInput.value = "";
+      keyStatus.innerHTML = `<span style="color:#888;">Cleared — using built-in keys.</span>`;
+    });
+  });
+
   chrome.storage.local.get({ lca_log: [], lca_extra_rules: "" }, ({ lca_log, lca_extra_rules }) => {
     const gens = lca_log.filter(e => e.kind === "gen");
     const userRetries = lca_log.filter(e => e.kind === "user_retry").length;

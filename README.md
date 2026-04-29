@@ -1,6 +1,6 @@
 # LinkedIn AI Commenter
 
-A Chrome/Brave browser extension that generates short, professional AI-powered comments on LinkedIn posts using a fully local Ollama model. No data leaves your machine.
+A Chrome/Brave browser extension that generates short, professional AI-powered comments on LinkedIn posts using the Groq API.
 
 Built by **Team NAK — Nadir Ali Khan**
 
@@ -10,30 +10,27 @@ Built by **Team NAK — Nadir Ali Khan**
 
 - Injects an AI comment bar under every LinkedIn feed post
 - 8 comment tones: Support, Insightful, Agree, Question, Congratulate, Challenge, Experience, Add Value
-- Powered by local Ollama (llama3.2) — 100% private, no API keys, no subscriptions
+- Powered by Groq API (llama-3.3-70b-versatile) — fast, free tier available
 - Auto-inserts the generated comment directly into the LinkedIn comment box
 - Short, professional, grammar-perfect output — no hyphens, no emojis, no filler phrases
+- Optional: bring your own Groq API key via the extension popup
 - Works across feed navigation without requiring a page refresh
 
 ---
 
 ## Requirements
 
-- [Ollama](https://ollama.com) installed and running locally
-- `llama3.2` model: `ollama pull llama3.2`
 - Chrome or Brave browser
+- A Groq API key (free): [console.groq.com](https://console.groq.com)
 
 ---
 
 ## Setup
 
-### 1. Start Ollama
+### 1. Get a Groq API Key
 
-```bash
-ollama serve
-```
-
-Or launch the Ollama desktop app. Confirm it is running at `http://localhost:11434`.
+1. Sign up at [console.groq.com](https://console.groq.com)
+2. Go to **API Keys** and create a new key
 
 ### 2. Load the Extension
 
@@ -42,7 +39,15 @@ Or launch the Ollama desktop app. Confirm it is running at `http://localhost:114
 3. Click **Load unpacked**
 4. Select the `linkedin-ai-commenter` folder
 
-### 3. Use It
+### 3. Add Your Key (Optional)
+
+1. Click the extension icon in the toolbar
+2. Find the **Groq API Key** section
+3. Paste your key and click **Save key**
+
+The extension includes built-in shared keys as a fallback — adding your own key gives you dedicated rate limits.
+
+### 4. Use It
 
 1. Open [LinkedIn Feed](https://www.linkedin.com/feed/)
 2. Scroll to any post
@@ -68,49 +73,17 @@ Or launch the Ollama desktop app. Confirm it is running at `http://localhost:114
 
 ---
 
-## Auto-start Ollama on Boot (macOS)
-
-To run Ollama 24/7 without touching anything after a restart:
-
-```bash
-# Create launchd service
-cat > ~/Library/LaunchAgents/com.ollama.server.plist << 'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key><string>com.ollama.server</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/Applications/Ollama.app/Contents/Resources/ollama</string>
-        <string>serve</string>
-    </array>
-    <key>EnvironmentVariables</key>
-    <dict>
-        <key>OLLAMA_NO_CLOUD</key><string>true</string>
-        <key>OLLAMA_ORIGINS</key><string>chrome-extension://*</string>
-        <key>HOME</key><string>/Users/YOUR_USERNAME</string>
-    </dict>
-    <key>RunAtLoad</key><true/>
-    <key>KeepAlive</key><true/>
-</dict>
-</plist>
-EOF
-
-launchctl load ~/Library/LaunchAgents/com.ollama.server.plist
-```
-
----
-
 ## File Structure
 
 ```
 linkedin-ai-commenter/
 ├── manifest.json     # Extension config (Manifest V3)
-├── content.js        # Post detection, UI injection, Ollama integration
-├── background.js     # Service worker — handles Ollama API fetch
+├── config.js         # Groq API key rotation
+├── content.js        # Post detection, UI injection, Groq integration
+├── background.js     # Service worker — handles Groq API fetch
+├── popup.html        # Extension popup (how-to guide, key input, stats)
+├── popup.js          # Popup logic — stats, self-improvement, key management
 ├── styles.css        # Minimal panel styling
-├── popup.html        # Extension popup (how-to guide)
 └── icons/
     ├── icon16.png
     ├── icon48.png
@@ -121,7 +94,7 @@ linkedin-ai-commenter/
 
 ## Privacy
 
-All AI processing runs locally via Ollama. No text, no post content, and no personal data are ever sent to any external server.
+Post text is sent to the Groq API for comment generation. Groq does not use API request data for model training. No data is stored or shared beyond the API call.
 
 ---
 

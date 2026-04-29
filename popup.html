@@ -173,6 +173,23 @@
     .open-btn:hover {
       background: #004182;
     }
+
+    /* API key input */
+    .key-input {
+      width: 100%;
+      padding: 7px 10px;
+      font-size: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      outline: none;
+      color: #1d1d1d;
+      font-family: monospace;
+      letter-spacing: 0.03em;
+    }
+
+    .key-input:focus {
+      border-color: #0a66c2;
+    }
   </style>
 </head>
 <body>
@@ -234,6 +251,18 @@
     <div class="section-title">Active learned rules</div>
     <div id="rules-body" style="font-size:11px;color:#333;white-space:pre-wrap;line-height:1.5;background:#f0f7ff;border-radius:6px;padding:7px 9px;margin-bottom:6px;"></div>
     <button id="clear-rules-btn" style="font-size:10px;color:#bbb;background:none;border:none;cursor:pointer;padding:0;">Remove learned rules</button>
+  </div>
+
+  <!-- API Key Settings -->
+  <div class="section">
+    <div class="section-title">Groq API Key</div>
+    <p style="font-size:11px;color:#666;margin-bottom:8px;line-height:1.4;">Enter your own key to use instead of the built-in shared keys. Get one free at <span style="color:#0a66c2;">console.groq.com</span>.</p>
+    <input id="api-key-input" class="key-input" type="password" placeholder="gsk_..." autocomplete="off" />
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <button id="save-key-btn" style="flex:1;background:#0a66c2;color:#fff;border:none;border-radius:12px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;">Save key</button>
+      <button id="clear-key-btn" style="background:#eee;color:#666;border:none;border-radius:12px;padding:5px 10px;font-size:11px;cursor:pointer;">Clear</button>
+    </div>
+    <div id="key-status" style="font-size:11px;margin-top:6px;min-height:16px;"></div>
   </div>
 
   <!-- Safety note -->
