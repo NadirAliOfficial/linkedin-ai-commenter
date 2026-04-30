@@ -1,4 +1,3 @@
-importScripts("config.js");
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 const controllers = new Map();
@@ -12,7 +11,8 @@ function getUserKey() {
 }
 
 async function callGroq(messages, { temperature = 0.65, max_tokens, signal } = {}) {
-  const userKey = await getUserKey();
+  const key = await getUserKey();
+  if (!key) throw new Error("No API key — add your Groq key in the extension popup.");
   const body = {
     model: "llama-3.3-70b-versatile",
     messages,
@@ -20,26 +20,20 @@ async function callGroq(messages, { temperature = 0.65, max_tokens, signal } = {
     ...(max_tokens ? { max_tokens } : {}),
     stream: false,
   };
-  async function tryFetch(attempt) {
-    const key = userKey || getGroqKey();
-    const r = await fetch(GROQ_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
-      body: JSON.stringify(body),
-      signal,
-    });
-    if (!r.ok) {
-      if (r.status === 429 && !userKey) {
-        rotateGroqKey();
-        if (attempt < GROQ_API_KEYS.length) return tryFetch(attempt + 1);
-        const wait = r.headers.get("retry-after") || "60";
-        throw new Error("Rate limited — wait " + Math.ceil(Number(wait) || 60) + "s");
-      }
-      throw new Error("Groq " + r.status);
+  const r = await fetch(GROQ_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+    body: JSON.stringify(body),
+    signal,
+  });
+  if (!r.ok) {
+    if (r.status === 429) {
+      const wait = r.headers.get("retry-after") || "60";
+      throw new Error("Rate limited — wait " + Math.ceil(Number(wait) || 60) + "s");
     }
-    return r.json();
+    throw new Error("Groq " + r.status);
   }
-  return tryFetch(1);
+  return r.json();
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

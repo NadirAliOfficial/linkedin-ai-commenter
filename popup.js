@@ -6,7 +6,9 @@ document.addEventListener("DOMContentLoaded", () => {
   chrome.storage.local.get({ lca_groq_key: "" }, ({ lca_groq_key }) => {
     if (lca_groq_key) {
       keyInput.value = lca_groq_key;
-      keyStatus.innerHTML = `<span style="color:#057642;font-weight:600;">✓ Using your key</span>`;
+      keyStatus.innerHTML = `<span style="color:#057642;font-weight:600;">✓ Key saved</span>`;
+    } else {
+      keyStatus.innerHTML = `<span style="color:#b45309;font-weight:600;">⚠ No key set — extension won't work until you save one.</span>`;
     }
   });
 

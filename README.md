@@ -39,13 +39,13 @@ Built by **Team NAK — Nadir Ali Khan**
 3. Click **Load unpacked**
 4. Select the `linkedin-ai-commenter` folder
 
-### 3. Add Your Key (Optional)
+### 3. Add Your Key
 
 1. Click the extension icon in the toolbar
 2. Find the **Groq API Key** section
 3. Paste your key and click **Save key**
 
-The extension includes built-in shared keys as a fallback — adding your own key gives you dedicated rate limits.
+The extension will not work until a key is saved.
 
 ### 4. Use It
 
