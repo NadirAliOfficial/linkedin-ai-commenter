@@ -20,34 +20,37 @@
 
   const SYSTEM = `Write a single LinkedIn comment that sounds natural — the kind of thing a real person types in a comment box and hits post.
 Rules:
-- ONE complete sentence. Match the length hint provided.
+- ONE complete sentence. Match the length hint provided. Shorter is better — say one thing well.
 - Make a genuine observation tied to something SPECIFIC in the post — a number, a named thing, a concrete situation, a decision. Never write something that could fit any other post.
 - BAD (too vague, fits any post): "This shift is happening much faster than expected." / "That's a really big cultural change happening quickly."
 - GOOD (post-specific): "The gap between devs who use AI and those who don't is already showing up in standups, Sara." — references the actual claim from the post.
+- ACHIEVEMENT POSTS (promotion, funding, launch, milestone, certification, new role, degree): "Congrats [Name]" followed immediately by the specific milestone detail is the best format. Example: "Congrats Raj — Senior Engineer in 3 years with no CS degree is legitimately fast." Keep it 6–12 words. Do NOT write a long philosophical observation about an achievement post.
 - NEVER refer to the person in third person — no "Sara did X", "Usman's product", "Welsh's approach", "his decision", "her post". The name must only appear as a direct address (e.g., "Raj," at the start or ", Raj." at the end) — once, or not at all.
 - Do NOT write like you're having a private chat ("for me...", "happens to me too", "been there", "I've done that too").
-- If the post asks a question, answer it directly as a statement.
-- NAME RULE: use the poster's name in roughly 1 in 2 comments — add it when it makes the comment feel more personal or direct. Drop it only when the sentence genuinely reads better without it.
+- If the post asks a question, answer it directly as a bold statement.
+- NAME RULE: use the poster's name in roughly 1 in 2 comments — add it when it makes the comment feel more personal or direct.
 - Use contractions freely. Sound human, not corporate.
 - NEVER use: "change everything", "going to change everything", "this is everything", "needed to hear this", "so important", "so powerful", "this hits different", "couldn't agree more", "love this", "so true", "preach", "this is gold", "dropping gems", "absolutely this", "thank you for sharing", "spot on", "100%", "keep it up", "speaks volumes", "words of wisdom", "really resonates", "fire post", "couldn't have said it better", "mic drop", "everyone needs to see this".
-- No hyphens or em dashes as separators. No filler openers like "Great post", "Well said", "Congrats", "Amazing", "Inspiring".
+- No filler openers like "Great post", "Well said", "Amazing", "Inspiring". "Congrats [Name]" is fine ONLY when immediately followed by a specific detail — never as a standalone line.
 - No hashtags. No quotes around output. Output only the comment text.
-- If the post is very short (a single sentence or just a project title), pick the ONE most specific detail and make an observation about that — never fall back to "looks clean", "great work", or "impressive".
-- NEVER end a comment with a bare compliment like "...which is impressive", "...which is amazing", "...is seriously impressive". The insight or observation IS the comment — do not trail it off into praise.
+- If the post is very short (a single sentence or just a project title), pick the ONE most specific detail and make an observation — never fall back to "looks clean", "great work", or "impressive".
+- NEVER end a comment with a bare compliment like "...which is impressive", "...which is amazing", "...is seriously impressive".
 - NEVER use "a game changer for me", "lowkey crushing it", "killing it" or any "X is a great way to Y" generic-advice phrasing.`;
 
   const SHOTS = {
     congratulate: [
-      { role: "user",      content: "Post: Just got promoted to Senior Engineer after 3 years of hard work.\nPoster's first name: Raj\nLength: 12–16 words.\nComment:" },
-      { role: "assistant", content: "Three years in and you're already at Senior Engineer — that progression doesn't happen by accident, Raj." },
-      { role: "user",      content: "Post: Our startup just crossed $1M ARR for the first time.\nPoster's first name: Leila\nLength: 12–16 words.\nComment:" },
-      { role: "assistant", content: "A million in ARR before touching outside funding means you own the whole story, Leila." },
-      { role: "user",      content: "Post: Excited to announce our SaaS just hit 1,000 paying customers — bootstrapped from zero in 14 months.\nPoster's first name: Usman\nLength: 12–16 words.\nComment:" },
-      { role: "assistant", content: "1,000 paying customers before any outside money means the product did the selling itself, Usman." },
-      { role: "user",      content: "Post: After 10 months of self-learning Python and data science, I just landed my first role as a Data Analyst at a tech company.\nPoster's first name: Anya\nLength: 12–16 words.\nComment:" },
-      { role: "assistant", content: "Ten months of self-teaching Python and walking straight into a tech data role skips most of the traditional path, Anya." },
-      { role: "user",      content: "Post: Completed my internship Task-2 building an eCommerce app with ReactJS and Tailwind CSS.\nPoster's first name: Syed\nLength: 12–16 words.\nComment:" },
-      { role: "assistant", content: "Shipping a full eCommerce UI with ReactJS and Tailwind in a single internship task is no small thing, Syed." },
+      { role: "user",      content: "Post: Just got promoted to Senior Engineer after 3 years of hard work.\nPoster's first name: Raj\nLength: 6–10 words.\nComment:" },
+      { role: "assistant", content: "Congrats Raj — Senior Engineer in 3 years is fast." },
+      { role: "user",      content: "Post: Passed my AWS Solutions Architect certification!\nPoster's first name: Ali\nLength: 6–10 words.\nComment:" },
+      { role: "assistant", content: "Congrats Ali — AWS SA cert is genuinely worth it." },
+      { role: "user",      content: "Post: Our startup just crossed $1M ARR for the first time.\nPoster's first name: Leila\nLength: 10–14 words.\nComment:" },
+      { role: "assistant", content: "Congrats Leila — $1M ARR before any outside funding means the product did the work." },
+      { role: "user",      content: "Post: Excited to announce our SaaS just hit 1,000 paying customers — bootstrapped from zero in 14 months.\nPoster's first name: Usman\nLength: 10–14 words.\nComment:" },
+      { role: "assistant", content: "Congrats Usman — 1,000 paying customers in 14 months with no outside money is the real thing." },
+      { role: "user",      content: "Post: After 10 months of self-learning Python and data science, I just landed my first role as a Data Analyst at a tech company.\nPoster's first name: Anya\nLength: 10–14 words.\nComment:" },
+      { role: "assistant", content: "Congrats Anya — 10 months of self-teaching Python straight into a tech data role skips the whole traditional path." },
+      { role: "user",      content: "Post: Completed my internship Task-2 building an eCommerce app with ReactJS and Tailwind CSS.\nPoster's first name: Syed\nLength: 6–10 words.\nComment:" },
+      { role: "assistant", content: "Congrats Syed — full eCommerce UI in one internship task is solid." },
     ],
     insightful: [
       { role: "user",      content: "Post: AI is changing how junior devs learn on the job faster than anyone expected.\nPoster's first name: Priya\nLength: 12–16 words.\nComment:" },
@@ -105,12 +108,13 @@ Rules:
     return /\?\s*$/.test(text.trim()) || /^(what|how|why|do you|have you|would you|should|can you|who|when|where)\b/i.test(text.trim());
   }
 
-  // Word count hint based on post length
-  function lengthHint(postText) {
+  // Word count hint based on post length and tone
+  function lengthHint(postText, tone) {
     const words = postText.trim().split(/\s+/).length;
-    if (words < 30)  return "8–12 words";
-    if (words < 80)  return "12–16 words";
-    return "14–20 words";
+    if (tone === "congratulate") return words < 40 ? "6–10 words" : "10–14 words";
+    if (words < 30)  return "6–10 words";
+    if (words < 80)  return "10–14 words";
+    return "12–18 words";
   }
 
   // ── Language detection ────────────────────────────────────────────────────
@@ -145,7 +149,9 @@ Rules:
     /\b(things|everything|the world|the industry|the field) (is|are) (changing|shifting|evolving|moving) (fast|quickly|rapidly)/i,
     /so true/i, /^preach/i, /this is gold/i, /dropping gems/i,
     /absolutely this/i, /well said/i, /great post/i, /amazing post/i,
-    /inspiring post/i, /^congrats?\b/i, /^congratulations\b/i,
+    /inspiring post/i,
+    /^congrats?[!.,]?\s*$/i, /^congratulations[!.,]?\s*$/i,
+    /^congrats?\s+on\s+(that|this|your)[!.,]?\s*$/i,
     /keep (it up|going|pushing)/i, /you('re| are) (amazing|incredible|awesome|killing it)/i,
     /this is (so |really )?(important|relevant|needed|powerful|huge)/i,
     /everyone (needs?|should|must) (see|read|know)/i,
@@ -247,8 +253,9 @@ Rules:
   function buildUserMsg(tone, postText, firstName) {
     const lang     = detectLanguage(postText);
     const langLine = lang !== "English" ? `Reply in ${lang}.` : "";
-    const hint     = lengthHint(postText);
+    const hint     = lengthHint(postText, tone);
     const qHint    = isQuestion(postText) ? "The post asks a question — answer it as a direct observation or bold statement tied to something specific in the post. Do NOT use 'I wish I had', 'I should have', or any first-person personal-wish phrasing." : "";
+    const congratsHint = tone === "congratulate" ? "Open with 'Congrats [Name]' and name the exact milestone — keep it short and punchy. Do not write a long observation." : "";
 
     return [
       `Post: ${postText}`,
@@ -256,6 +263,7 @@ Rules:
       `Length: ${hint}.`,
       langLine,
       qHint,
+      congratsHint,
       "Comment:",
     ].filter(Boolean).join("\n");
   }
