@@ -24,7 +24,8 @@ Rules:
 - Make a genuine observation tied to something SPECIFIC in the post — a number, a named thing, a concrete situation, a decision. Never write something that could fit any other post.
 - BAD (too vague, fits any post): "This shift is happening much faster than expected." / "That's a really big cultural change happening quickly."
 - GOOD (post-specific): "The gap between devs who use AI and those who don't is already showing up in standups, Sara." — references the actual claim from the post.
-- ACHIEVEMENT POSTS (promotion, funding, launch, milestone, certification, new role, degree): "Congrats [Name]" followed immediately by the specific milestone detail is the best format. Example: "Congrats Raj — Senior Engineer in 3 years with no CS degree is legitimately fast." Keep it 6–12 words. Do NOT write a long philosophical observation about an achievement post.
+- ACHIEVEMENT POSTS — ONLY these qualify: promotion, new job/role, certification, degree, graduation, revenue milestone, funding, award. Use "Congrats [Name]" followed immediately by the specific milestone. Example: "Congrats Raj — Senior Engineer in 3 years is fast." Keep it 5–9 words.
+- NOT achievements: building a website, completing a project/task, shipping a feature, finishing an internship task. For those, write a specific observation — no Congrats.
 - NEVER refer to the person in third person — no "Sara did X", "Usman's product", "Welsh's approach", "his decision", "her post". The name must only appear as a direct address (e.g., "Raj," at the start or ", Raj." at the end) — once, or not at all.
 - Do NOT write like you're having a private chat ("for me...", "happens to me too", "been there", "I've done that too").
 - If the post asks a question, answer it directly as a bold statement.
@@ -39,46 +40,44 @@ Rules:
 
   const SHOTS = {
     congratulate: [
-      { role: "user",      content: "Post: Just got promoted to Senior Engineer after 3 years of hard work.\nPoster's first name: Raj\nLength: 6–10 words.\nComment:" },
+      { role: "user",      content: "Post: Just got promoted to Senior Engineer after 3 years of hard work.\nPoster's first name: Raj\nLength: 5–8 words.\nComment:" },
       { role: "assistant", content: "Congrats Raj — Senior Engineer in 3 years is fast." },
-      { role: "user",      content: "Post: Passed my AWS Solutions Architect certification!\nPoster's first name: Ali\nLength: 6–10 words.\nComment:" },
-      { role: "assistant", content: "Congrats Ali — AWS SA cert is genuinely worth it." },
-      { role: "user",      content: "Post: Our startup just crossed $1M ARR for the first time.\nPoster's first name: Leila\nLength: 10–14 words.\nComment:" },
-      { role: "assistant", content: "Congrats Leila — $1M ARR before any outside funding means the product did the work." },
-      { role: "user",      content: "Post: Excited to announce our SaaS just hit 1,000 paying customers — bootstrapped from zero in 14 months.\nPoster's first name: Usman\nLength: 10–14 words.\nComment:" },
-      { role: "assistant", content: "Congrats Usman — 1,000 paying customers in 14 months with no outside money is the real thing." },
-      { role: "user",      content: "Post: After 10 months of self-learning Python and data science, I just landed my first role as a Data Analyst at a tech company.\nPoster's first name: Anya\nLength: 10–14 words.\nComment:" },
-      { role: "assistant", content: "Congrats Anya — 10 months of self-teaching Python straight into a tech data role skips the whole traditional path." },
-      { role: "user",      content: "Post: Completed my internship Task-2 building an eCommerce app with ReactJS and Tailwind CSS.\nPoster's first name: Syed\nLength: 6–10 words.\nComment:" },
-      { role: "assistant", content: "Congrats Syed — full eCommerce UI in one internship task is solid." },
+      { role: "user",      content: "Post: Passed my AWS Solutions Architect certification!\nPoster's first name: Ali\nLength: 5–8 words.\nComment:" },
+      { role: "assistant", content: "Congrats Ali — AWS SA cert is genuinely hard." },
+      { role: "user",      content: "Post: Just received my Master's degree in Computer Science from NYU!\nPoster's first name: Zara\nLength: 5–8 words.\nComment:" },
+      { role: "assistant", content: "Congrats Zara — CS Master's from NYU is earned." },
+      { role: "user",      content: "Post: Our startup just crossed $1M ARR bootstrapped from zero.\nPoster's first name: Leila\nLength: 8–11 words.\nComment:" },
+      { role: "assistant", content: "Congrats Leila — $1M ARR with no outside funding means the product sold itself." },
+      { role: "user",      content: "Post: After 10 months of self-learning Python, I just landed my first Data Analyst role at a tech company.\nPoster's first name: Anya\nLength: 8–11 words.\nComment:" },
+      { role: "assistant", content: "Congrats Anya — 10 months of Python self-study straight into a tech role." },
     ],
     insightful: [
-      { role: "user",      content: "Post: AI is changing how junior devs learn on the job faster than anyone expected.\nPoster's first name: Priya\nLength: 12–16 words.\nComment:" },
-      { role: "assistant", content: "The gap between devs who use AI well and those who don't is already showing up in standups, Priya." },
-      { role: "user",      content: "Post: Remote work is here to stay whether companies like it or not.\nPoster's first name: Tom\nLength: 12–16 words.\nComment:" },
-      { role: "assistant", content: "Every company still fighting remote work is basically running a slow exit interview at this point." },
+      { role: "user",      content: "Post: AI is changing how junior devs learn on the job faster than anyone expected.\nPoster's first name: Priya\nLength: 8–12 words.\nComment:" },
+      { role: "assistant", content: "Devs who skip AI tools are already a standup behind, Priya." },
+      { role: "user",      content: "Post: Remote work is here to stay whether companies like it or not.\nPoster's first name: Tom\nLength: 8–12 words.\nComment:" },
+      { role: "assistant", content: "Companies still fighting remote are basically running a slow exit interview." },
     ],
     support: [
-      { role: "user",      content: "Post: Burned out after 3 years of hustle culture. Taking a real break for once.\nPoster's first name: Sara\nLength: 12–16 words.\nComment:" },
-      { role: "assistant", content: "Recognizing when three years of hustle has maxed out takes more self-awareness than most people have, Sara." },
-      { role: "user",      content: "Post: My first startup failed and I'm starting over from scratch.\nPoster's first name: James\nLength: 12–16 words.\nComment:" },
-      { role: "assistant", content: "Starting over after a first startup failure is genuinely harder than the launch itself was, James." },
+      { role: "user",      content: "Post: Burned out after 3 years of hustle culture. Taking a real break for once.\nPoster's first name: Sara\nLength: 8–12 words.\nComment:" },
+      { role: "assistant", content: "Three years before recognizing the burnout is actually fast, Sara." },
+      { role: "user",      content: "Post: My first startup failed and I'm starting over from scratch.\nPoster's first name: James\nLength: 8–12 words.\nComment:" },
+      { role: "assistant", content: "Starting over after the first failure is harder than the launch, James." },
     ],
     challenge: [
-      { role: "user",      content: "Post: Passion is all you really need to succeed as an entrepreneur.\nPoster's first name: Dan\nLength: 12–16 words.\nComment:" },
-      { role: "assistant", content: "Passion gets you started but it's the boring discipline that actually keeps the company alive, Dan." },
+      { role: "user",      content: "Post: Passion is all you really need to succeed as an entrepreneur.\nPoster's first name: Dan\nLength: 8–12 words.\nComment:" },
+      { role: "assistant", content: "Passion starts it — boring discipline is what keeps it alive, Dan." },
     ],
     experience: [
-      { role: "user",      content: "Post: True leadership is about giving credit, not taking it.\nPoster's first name: Omar\nLength: 12–16 words.\nComment:" },
-      { role: "assistant", content: "Giving credit instead of taking it is the one thing that completely changes team energy, Omar." },
+      { role: "user",      content: "Post: True leadership is about giving credit, not taking it.\nPoster's first name: Omar\nLength: 8–12 words.\nComment:" },
+      { role: "assistant", content: "Giving credit instead of taking it completely changes team energy, Omar." },
     ],
     addvalue: [
-      { role: "user",      content: "Post: Most startups fail because they build the wrong thing for too long.\nPoster's first name: Lena\nLength: 12–16 words.\nComment:" },
-      { role: "assistant", content: "Ten honest user conversations before the first sprint would save most startups months of wasted builds, Lena." },
+      { role: "user",      content: "Post: Most startups fail because they build the wrong thing for too long.\nPoster's first name: Lena\nLength: 8–12 words.\nComment:" },
+      { role: "assistant", content: "Ten user conversations before sprint one saves months of wasted builds, Lena." },
     ],
     funny: [
-      { role: "user",      content: "Post: Just sat through a 3-hour meeting that could have been a 2-line email.\nPoster's first name: Beth\nLength: 12–16 words.\nComment:" },
-      { role: "assistant", content: "A 2-line email would've taken four minutes and everyone would've actually read it, Beth." },
+      { role: "user",      content: "Post: Just sat through a 3-hour meeting that could have been a 2-line email.\nPoster's first name: Beth\nLength: 8–12 words.\nComment:" },
+      { role: "assistant", content: "A 2-line email and everyone would've actually read it, Beth." },
     ],
   };
 
@@ -86,8 +85,11 @@ Rules:
 
   function detectTone(text) {
     const t = text.toLowerCase();
-    if (/\b(congratulat|excited to (share|announce)|thrilled|just (got|joined|launched|hired|promoted)|new role|proud to|(hit|crossed|reached|celebrating) (a |my |our )?milestone|achievement|offer|passed|certified|degree|graduated)\b/.test(t))
-      return "congratulate";
+    // Only real personal/career achievements — NOT project completions or launches
+    if (
+      /\b(congratulat|just (got|joined|hired|promoted|passed|accepted)|new (role|job|position)|offer letter|starting (at|my new|a new) (role|job|position)|joining .{0,25} as |certified|certification|certificate|degree|graduated|graduation|won .{0,20}(award|prize|scholarship)|scholarship|fellowship)\b/i.test(t) ||
+      /\b(hit|crossed|reached|celebrating) .{0,20}(\$[\d,.]+[kmb]?|[\d,.]+ ?(million|billion)) .{0,15}(arr|mrr|revenue|customers|users|raised|in funding)\b/i.test(t)
+    ) return "congratulate";
     if (/\b(unpopular opinion|controversial|i disagree|myth|wrong about|actually|but wait|hot take|change my mind)\b/.test(t))
       return "challenge";
     if (/\b(i (learned|realized|failed|struggled|went through|survived|made it|discovered|noticed))\b/.test(t))
@@ -111,10 +113,10 @@ Rules:
   // Word count hint based on post length and tone
   function lengthHint(postText, tone) {
     const words = postText.trim().split(/\s+/).length;
-    if (tone === "congratulate") return words < 40 ? "6–10 words" : "10–14 words";
-    if (words < 30)  return "6–10 words";
-    if (words < 80)  return "10–14 words";
-    return "12–18 words";
+    if (tone === "congratulate") return words < 40 ? "5–8 words" : "8–11 words";
+    if (words < 30)  return "5–8 words";
+    if (words < 80)  return "8–12 words";
+    return "10–14 words";
   }
 
   // ── Language detection ────────────────────────────────────────────────────
@@ -255,7 +257,7 @@ Rules:
     const langLine = lang !== "English" ? `Reply in ${lang}.` : "";
     const hint     = lengthHint(postText, tone);
     const qHint    = isQuestion(postText) ? "The post asks a question — answer it as a direct observation or bold statement tied to something specific in the post. Do NOT use 'I wish I had', 'I should have', or any first-person personal-wish phrasing." : "";
-    const congratsHint = tone === "congratulate" ? "Open with 'Congrats [Name]' and name the exact milestone — keep it short and punchy. Do not write a long observation." : "";
+    const congratsHint = tone === "congratulate" ? "Open with 'Congrats [Name]' and name the exact milestone in 5–9 words total. Only use Congrats for real achievements: job, promotion, certification, degree, graduation, funding, award. NOT for building a project, completing a task, or shipping a feature." : "";
 
     return [
       `Post: ${postText}`,
