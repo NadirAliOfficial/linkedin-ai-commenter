@@ -36,7 +36,10 @@ Rules:
 - No hashtags. No quotes around output. Output only the comment text.
 - If the post is very short (a single sentence or just a project title), pick the ONE most specific detail and make an observation — never fall back to "looks clean", "great work", or "impressive".
 - NEVER end a comment with a bare compliment like "...which is impressive", "...which is amazing", "...is seriously impressive".
-- NEVER use "a game changer for me", "lowkey crushing it", "killing it" or any "X is a great way to Y" generic-advice phrasing.`;
+- NEVER use "a game changer for me", "lowkey crushing it", "killing it" or any "X is a great way to Y" generic-advice phrasing.
+- Vary sentence structure — don't always use the same "[observation], [name]" or "[name], [observation]" pattern.
+- Occasionally start mid-thought, like a human would: "Three years and no outside funding" not always a pristine grammatical opener.
+- A comment that is slightly blunt or direct is better than one that sounds polished and corporate.`;
 
   const SHOTS = {
     congratulate: [
@@ -754,6 +757,126 @@ Rules:
     }
   }
 
+  // ── Reply to comments ────────────────────────────────────────────────────
+
+  const REPLY_SYSTEM = `Write a single short reply to a LinkedIn comment. Sound like a real person continuing a conversation.
+Rules:
+- 1 sentence, 5–14 words max. Shorter is usually better.
+- Pick ONE specific thing from the comment and respond to it directly.
+- Casual, direct, conversational — like texting a colleague.
+- No openers: never start with "Great", "Totally", "100%", "Absolutely", "Agree", "Exactly".
+- Contractions welcome. Imperfect phrasing is fine.
+- No hashtags, no emojis unless the comment had them.
+- No quotes around output. Output only the reply text.`;
+
+  function isReplyBtn(btn) {
+    const label = (btn.getAttribute("aria-label") || btn.textContent || "").toLowerCase().trim();
+    if (!label.includes("reply")) return false;
+    return !!btn.closest([
+      ".comments-comment-social-bar",
+      ".comments-comment-item__social-actions",
+      ".comments-comment-social-actions",
+    ].join(","));
+  }
+
+  function getCommentText(replyBtn) {
+    const item = replyBtn.closest([
+      ".comments-comment-item",
+      ".comments-comment-entity",
+      ".comments-comments-list__comment-item",
+    ].join(","));
+    if (!item) return "";
+    const textEl = item.querySelector([
+      ".comments-comment-item__main-content .update-components-text",
+      ".comments-comment-entity__content .update-components-text",
+      ".update-components-text .break-words",
+      ".update-components-text",
+    ].join(","));
+    return textEl ? textEl.textContent.trim() : "";
+  }
+
+  function findReplyBox(anchor) {
+    // anchor = the comment item that was replied to
+    if (!anchor) return null;
+    // LinkedIn inserts the reply editor inside the same item or as a sibling
+    const inside = anchor.querySelector(
+      "div[contenteditable='true'][data-placeholder*='reply' i], " +
+      "div[contenteditable='true'][data-placeholder*='Add a reply' i]"
+    );
+    if (inside) return inside;
+    // Check next siblings
+    let sib = anchor.nextElementSibling;
+    for (let i = 0; i < 4 && sib; i++) {
+      const box = sib.querySelector("div[contenteditable='true']");
+      if (box) return box;
+      sib = sib.nextElementSibling;
+    }
+    // Fallback: any reply placeholder on page
+    return document.querySelector(
+      "div[contenteditable='true'][data-placeholder*='reply' i], " +
+      "div[contenteditable='true'][data-placeholder*='Add a reply' i]"
+    );
+  }
+
+  async function generateReply(commentText, postText) {
+    const context = postText ? `Original post (context): ${postText.slice(0, 250)}\n` : "";
+    const userMsg = `${context}Comment to reply to: ${commentText}\nShort reply:`;
+    return runtimeSendMessage({
+      type: "ollama",
+      payload: {
+        model: MODEL,
+        stream: false,
+        options: { temperature: 0.78, num_predict: 55, num_ctx: 2048, keep_alive: -1 },
+        messages: [
+          { role: "system", content: REPLY_SYSTEM },
+          { role: "user", content: "Comment to reply to: More power to you congratulations 👋\nShort reply:" },
+          { role: "assistant", content: "That kind of energy is exactly what keeps the momentum going." },
+          { role: "user", content: "Comment to reply to: The gap between devs who use AI and those who don't is already showing up.\nShort reply:" },
+          { role: "assistant", content: "Standups make it obvious pretty fast." },
+          { role: "user", content: userMsg },
+        ],
+      },
+    }).then(resp => clean(resp.text));
+  }
+
+  async function handleReplyClick(replyBtn) {
+    const commentItem = replyBtn.closest([
+      ".comments-comment-item",
+      ".comments-comment-entity",
+      ".comments-comments-list__comment-item",
+    ].join(","));
+
+    const commentText = getCommentText(replyBtn);
+    if (!commentText || commentText.length < 4) return;
+
+    const postEl = findPostEl(replyBtn);
+    const postText = postEl ? getPostText(postEl) : "";
+
+    showPill(`${SPINNER} <span>Writing reply…</span>`);
+
+    try {
+      const reply = await generateReply(commentText, postText);
+
+      let tries = 0;
+      const t = setInterval(() => {
+        tries++;
+        const box = findReplyBox(commentItem);
+        if (box) {
+          clearInterval(t);
+          pasteInto(box, reply);
+          showSuccessPill(reply, box, "reply", commentText, "");
+        } else if (tries >= 25) {
+          clearInterval(t);
+          showPill(`<span style="color:#ef4444">⚠ Reply box not found</span>`, "#ef4444");
+          hidePill(3000);
+        }
+      }, 200);
+    } catch (e) {
+      showPill(`<span style="color:#ef4444">⚠ ${escHtml(e.message)}</span>`, "#ef4444");
+      hidePill(3000);
+    }
+  }
+
   // ── Intercept Comment button clicks ──────────────────────────────────────
 
   function isMainPostCommentBtn(btn) {
@@ -818,9 +941,18 @@ Rules:
 
   document.addEventListener("click", (e) => {
     const btn = e.target.closest("button");
-    if (!btn || !isMainPostCommentBtn(btn)) return;
-    const postEl = findPostEl(btn);
-    setTimeout(() => generateAndInsert(postEl), 500);
+    if (!btn) return;
+
+    if (isReplyBtn(btn)) {
+      // Delay so LinkedIn renders the reply box first
+      setTimeout(() => handleReplyClick(btn), 650);
+      return;
+    }
+
+    if (isMainPostCommentBtn(btn)) {
+      const postEl = findPostEl(btn);
+      setTimeout(() => generateAndInsert(postEl), 500);
+    }
   }, true);
 
 })();
