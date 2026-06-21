@@ -769,52 +769,89 @@ Rules:
 - No hashtags, no emojis unless the comment had them.
 - No quotes around output. Output only the reply text.`;
 
+  // Comment containers — same list used by isMainPostCommentBtn to exclude reply buttons
+  const COMMENT_CONTAINERS = [
+    ".comments-comment-item",
+    ".comments-comment-entity",
+    ".comments-comment-social-bar",
+    ".comments-comment-list",
+    ".comments-comments-list",
+    ".comments-comment-list__comment-item",
+  ].join(",");
+
   function isReplyBtn(btn) {
-    const label = (btn.getAttribute("aria-label") || btn.textContent || "").toLowerCase().trim();
-    if (!label.includes("reply")) return false;
-    return !!btn.closest([
-      ".comments-comment-social-bar",
-      ".comments-comment-item__social-actions",
-      ".comments-comment-social-actions",
-    ].join(","));
+    const label = (btn.getAttribute("aria-label") || "").toLowerCase();
+    const text  = btn.textContent.trim().toLowerCase();
+    // LinkedIn uses "Reply" text or aria-label like "Reply to X's comment"
+    if (!label.includes("reply") && text !== "reply") return false;
+    // Must be inside a comment container, not the main post action bar
+    return !!btn.closest(COMMENT_CONTAINERS);
   }
 
   function getCommentText(replyBtn) {
-    const item = replyBtn.closest([
-      ".comments-comment-item",
-      ".comments-comment-entity",
-      ".comments-comments-list__comment-item",
-    ].join(","));
+    const item = replyBtn.closest(COMMENT_CONTAINERS);
     if (!item) return "";
-    const textEl = item.querySelector([
-      ".comments-comment-item__main-content .update-components-text",
-      ".comments-comment-entity__content .update-components-text",
-      ".update-components-text .break-words",
+
+    // Try specific selectors first
+    const specific = item.querySelector([
       ".update-components-text",
+      ".comments-comment-item__main-content",
+      ".comments-comment-entity__content",
     ].join(","));
-    return textEl ? textEl.textContent.trim() : "";
+    if (specific) return specific.textContent.trim().slice(0, 400);
+
+    // Fallback: clone item, strip social bar + author header, get remaining text
+    const clone = item.cloneNode(true);
+    clone.querySelector([
+      ".comments-comment-social-bar",
+      ".comments-comment-item__social-actions",
+      ".comments-comment-social-actions",
+      "[class*='social-bar']",
+      "[class*='actor']",
+      "[class*='timestamp']",
+    ].join(","))?.remove();
+    return clone.textContent.trim().slice(0, 400);
   }
 
   function findReplyBox(anchor) {
-    // anchor = the comment item that was replied to
-    if (!anchor) return null;
-    // LinkedIn inserts the reply editor inside the same item or as a sibling
-    const inside = anchor.querySelector(
-      "div[contenteditable='true'][data-placeholder*='reply' i], " +
-      "div[contenteditable='true'][data-placeholder*='Add a reply' i]"
-    );
-    if (inside) return inside;
-    // Check next siblings
-    let sib = anchor.nextElementSibling;
-    for (let i = 0; i < 4 && sib; i++) {
-      const box = sib.querySelector("div[contenteditable='true']");
-      if (box) return box;
-      sib = sib.nextElementSibling;
+    // LinkedIn auto-focuses the reply editor when it opens — check activeElement first
+    const active = document.activeElement;
+    if (active && active.getAttribute("contenteditable") === "true" && active !== document.body) {
+      return active;
     }
-    // Fallback: any reply placeholder on page
+
+    const CE = "div[contenteditable='true']";
+
+    if (anchor) {
+      // Inside the comment item itself
+      const inside = anchor.querySelector(CE);
+      if (inside) return inside;
+
+      // Next siblings (LinkedIn sometimes appends the reply form after the comment)
+      let sib = anchor.nextElementSibling;
+      for (let i = 0; i < 5 && sib; i++) {
+        const box = sib.querySelector(CE);
+        if (box) return box;
+        sib = sib.nextElementSibling;
+      }
+
+      // Parent and parent's next siblings
+      const parent = anchor.parentElement;
+      if (parent) {
+        const box = parent.querySelector(CE);
+        if (box) return box;
+        let psib = parent.nextElementSibling;
+        for (let i = 0; i < 3 && psib; i++) {
+          const b = psib.querySelector(CE);
+          if (b) return b;
+          psib = psib.nextElementSibling;
+        }
+      }
+    }
+
+    // Last resort: any placeholder that mentions "reply"
     return document.querySelector(
-      "div[contenteditable='true'][data-placeholder*='reply' i], " +
-      "div[contenteditable='true'][data-placeholder*='Add a reply' i]"
+      `${CE}[data-placeholder*='reply' i], ${CE}[data-placeholder*='Add a reply' i]`
     );
   }
 
@@ -840,12 +877,7 @@ Rules:
   }
 
   async function handleReplyClick(replyBtn) {
-    const commentItem = replyBtn.closest([
-      ".comments-comment-item",
-      ".comments-comment-entity",
-      ".comments-comments-list__comment-item",
-    ].join(","));
-
+    const commentItem = replyBtn.closest(COMMENT_CONTAINERS);
     const commentText = getCommentText(replyBtn);
     if (!commentText || commentText.length < 4) return;
 
