@@ -958,22 +958,34 @@ Rules:
     }
   }
 
-  // ── Click-based reply (works when button is already hydrated) ─────────────
+  // ── Find any visible reply box on the page ───────────────────────────────
+  function findVisibleReplyBox() {
+    for (const el of document.querySelectorAll("div[contenteditable='true']")) {
+      if (el.offsetParent === null) continue; // not visible
+      const ph = (el.getAttribute("data-placeholder") || "").toLowerCase();
+      // Skip main comment boxes
+      if (ph.includes("write a comment") || ph.includes("add a comment")) continue;
+      // Accept if placeholder mentions reply OR element is inside a comment container
+      if (ph.includes("reply") || el.closest(COMMENT_CONTAINERS)) return el;
+    }
+    // Fallback: active focused editor that isn't the main comment box
+    const active = document.activeElement;
+    if (active?.getAttribute("contenteditable") === "true" && active !== document.body) {
+      const ph = (active.getAttribute("data-placeholder") || "").toLowerCase();
+      if (!ph.includes("write a comment") && !ph.includes("add a comment")) return active;
+    }
+    return null;
+  }
+
+  // ── Click-based reply ─────────────────────────────────────────────────────
   async function handleReplyClick(commentText, postEl) {
     if (!commentText || commentText.length < 4) return;
     const postText = postEl ? getPostText(postEl) : "";
 
-    // Poll for the reply box that LinkedIn will render after the click
     let tries = 0;
     const t = setInterval(async () => {
       tries++;
-      const box = document.querySelector(
-        "div[contenteditable='true'][data-placeholder*='reply' i], " +
-        "div[contenteditable='true'][data-placeholder*='add a reply' i]"
-      ) || (() => {
-        const active = document.activeElement;
-        return (active?.getAttribute("contenteditable") === "true" && active !== document.body) ? active : null;
-      })();
+      const box = findVisibleReplyBox();
       if (box && !seenReplyBoxes.has(box)) {
         clearInterval(t);
         await doReply(box, commentText, postText);
@@ -983,30 +995,44 @@ Rules:
     }, 200);
   }
 
-  // ── MutationObserver: backup trigger when click detection fails ───────────
+  // ── MutationObserver: catches new reply boxes added to DOM ────────────────
+  function tryReplyBox(el) {
+    if (seenReplyBoxes.has(el)) return;
+    if (el.offsetParent === null) return;
+    const ph = (el.getAttribute("data-placeholder") || "").toLowerCase();
+    if (ph.includes("write a comment") || ph.includes("add a comment")) return;
+    if (!ph.includes("reply") && !el.closest(COMMENT_CONTAINERS)) return;
+    const commentText = extractCommentTextNearBox(el);
+    if (!commentText || commentText.length < 4) return;
+    const postEl = findPostEl(el);
+    const postText = postEl ? getPostText(postEl) : "";
+    setTimeout(() => doReply(el, commentText, postText), 300);
+  }
+
   new MutationObserver(mutations => {
     for (const m of mutations) {
-      for (const node of m.addedNodes) {
-        if (node.nodeType !== 1) continue;
-        const candidates = node.getAttribute?.("contenteditable") === "true"
-          ? [node]
-          : [...(node.querySelectorAll?.("div[contenteditable='true']") || [])];
-        for (const el of candidates) {
-          if (seenReplyBoxes.has(el)) continue;
-          const ph = (el.getAttribute("data-placeholder") || "").toLowerCase();
-          const inComments = !!el.closest(COMMENT_CONTAINERS);
-          if (!ph.includes("reply") && !ph.includes("add a reply") && !inComments) continue;
-          // Don't trigger on main post comment boxes
-          if (ph.includes("write a comment") || ph.includes("add a comment")) continue;
-          const commentText = extractCommentTextNearBox(el);
-          if (!commentText || commentText.length < 4) continue;
-          const postEl = findPostEl(el);
-          const postText = postEl ? getPostText(postEl) : "";
-          setTimeout(() => doReply(el, commentText, postText), 400);
+      // childList: new nodes added
+      if (m.type === "childList") {
+        for (const node of m.addedNodes) {
+          if (node.nodeType !== 1) continue;
+          const candidates = node.getAttribute?.("contenteditable") === "true"
+            ? [node]
+            : [...(node.querySelectorAll?.("div[contenteditable='true']") || [])];
+          candidates.forEach(tryReplyBox);
         }
       }
+      // attributes: existing node became visible or got a reply placeholder
+      if (m.type === "attributes" && m.target.nodeType === 1) {
+        const el = m.target;
+        if (el.getAttribute("contenteditable") === "true") tryReplyBox(el);
+      }
     }
-  }).observe(document.body, { childList: true, subtree: true });
+  }).observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["data-placeholder", "contenteditable", "aria-hidden", "style", "class"],
+  });
 
   // ── Intercept Comment button clicks ──────────────────────────────────────
 
