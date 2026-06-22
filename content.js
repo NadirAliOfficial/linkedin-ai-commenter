@@ -800,13 +800,20 @@ Rules:
   ].join(",");
 
   function isReplyBtn(btn) {
-    const label = (btn.getAttribute("aria-label") || "").toLowerCase();
-    const text  = btn.textContent.trim().toLowerCase();
-    if (!label.includes("reply") && !text.includes("reply")) return false;
-    // Must be inside a comment container, not the main post action bar
+    const label  = btn.getAttribute("aria-label") || "";
+    const labelL = label.toLowerCase();
+    const text   = btn.textContent.trim().toLowerCase();
+    if (!labelL.includes("reply") && !text.includes("reply")) return false;
+
+    // Primary: LinkedIn formats reply buttons as "Reply to [name]'s comment"
+    if (/^reply to .+['']s comment/i.test(label)) return true;
+
+    // Container check (covers feed view)
     if (btn.closest(COMMENT_CONTAINERS)) return true;
-    // Fallback: if button says exactly "reply" and is NOT in the main post action bar
+
+    // Text-only reply button not in main post bar
     if (text === "reply" && !isMainPostCommentBtn(btn)) return true;
+
     return false;
   }
 
@@ -838,7 +845,25 @@ Rules:
 
   function getCommentText(replyBtn) {
     const item = replyBtn.isConnected ? replyBtn.closest(COMMENT_CONTAINERS) : null;
-    return getCommentTextFromItem(item);
+    if (item) return getCommentTextFromItem(item);
+
+    // Fallback for SPA navigation: container class may differ — walk up manually
+    const TEXT_SELS = [
+      ".update-components-text", ".comments-comment-item__main-content",
+      ".comments-comment-entity__content", ".comments-comment-content",
+      ".comments-comment-item__main-content--cr", "span.break-words",
+    ];
+    let node = replyBtn.parentElement;
+    for (let d = 0; d < 12 && node && node !== document.body; d++) {
+      for (const sel of TEXT_SELS) {
+        for (const el of node.querySelectorAll(sel)) {
+          const t = el.textContent.trim();
+          if (t.length > 4) return t.slice(0, 400);
+        }
+      }
+      node = node.parentElement;
+    }
+    return "";
   }
 
   // Extract comment text by walking around the reply box in the DOM
@@ -1074,13 +1099,24 @@ Rules:
     const btn = e.target.closest("button, [role='button']");
     if (!btn) return;
 
+    const label  = btn.getAttribute("aria-label") || "";
+    const labelL = label.toLowerCase();
+
     const isReply = isReplyBtn(btn);
 
     if (isReply) {
       const commentText = getCommentText(btn);
-      showPill(`[1] Reply click detected — getting text…`);
+      showPill(`[1] Reply click — text:"${commentText.slice(0, 20) || "EMPTY"}"…`);
       const postEl = findPostEl(btn);
       setTimeout(() => handleReplyClick(commentText, postEl), 500);
+      return;
+    }
+
+    // Debug: "reply" in label but not caught — show why
+    if (labelL.includes("reply")) {
+      const inCont = !!btn.closest(COMMENT_CONTAINERS);
+      showPill(`[D] reply btn not caught. inContainer:${inCont} label:"${label.slice(0, 30)}"`, "#f59e0b");
+      hidePill(10000);
       return;
     }
 
