@@ -777,15 +777,21 @@ Rules:
     ".comments-comment-list",
     ".comments-comments-list",
     ".comments-comment-list__comment-item",
+    ".comments-comment-item__main-content",
+    ".comments-comment-item__condensed",
+    ".comments-reply-item",
+    "[data-test-id*='comment']",
   ].join(",");
 
   function isReplyBtn(btn) {
     const label = (btn.getAttribute("aria-label") || "").toLowerCase();
     const text  = btn.textContent.trim().toLowerCase();
-    // LinkedIn uses "Reply" text or aria-label like "Reply to X's comment"
-    if (!label.includes("reply") && text !== "reply") return false;
+    if (!label.includes("reply") && !text.includes("reply")) return false;
     // Must be inside a comment container, not the main post action bar
-    return !!btn.closest(COMMENT_CONTAINERS);
+    if (btn.closest(COMMENT_CONTAINERS)) return true;
+    // Fallback: if button says exactly "reply" and is NOT in the main post action bar
+    if (text === "reply" && !isMainPostCommentBtn(btn)) return true;
+    return false;
   }
 
   function getCommentText(replyBtn) {
@@ -849,10 +855,18 @@ Rules:
       }
     }
 
-    // Last resort: any placeholder that mentions "reply"
-    return document.querySelector(
-      `${CE}[data-placeholder*='reply' i], ${CE}[data-placeholder*='Add a reply' i]`
+    // Last resort: any visible editor with a reply-related placeholder
+    const replyBox = document.querySelector(
+      `${CE}[data-placeholder*='reply' i], ${CE}[data-placeholder*='Add a reply' i], ${CE}[data-placeholder*='Write a reply' i]`
     );
+    if (replyBox) return replyBox;
+
+    // Final fallback: most recently focused contenteditable that isn't the main comment box
+    const allEditors = [...document.querySelectorAll(CE)].filter(el => {
+      const ph = (el.getAttribute("data-placeholder") || "").toLowerCase();
+      return el.offsetParent !== null && !ph.includes("write a comment");
+    });
+    return allEditors[allEditors.length - 1] || null;
   }
 
   async function generateReply(commentText, postText) {
@@ -972,7 +986,7 @@ Rules:
   }
 
   document.addEventListener("click", (e) => {
-    const btn = e.target.closest("button");
+    const btn = e.target.closest("button, [role='button']");
     if (!btn) return;
 
     if (isReplyBtn(btn)) {
