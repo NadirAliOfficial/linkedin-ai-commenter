@@ -805,29 +805,53 @@ Rules:
     return false;
   }
 
-  function getCommentText(replyBtn) {
-    const item = replyBtn.closest(COMMENT_CONTAINERS);
+  function getCommentTextFromItem(item) {
     if (!item) return "";
-
-    // Try specific selectors first
     const specific = item.querySelector([
       ".update-components-text",
       ".comments-comment-item__main-content",
       ".comments-comment-entity__content",
     ].join(","));
     if (specific) return specific.textContent.trim().slice(0, 400);
-
-    // Fallback: clone item, strip social bar + author header, get remaining text
     const clone = item.cloneNode(true);
-    clone.querySelector([
-      ".comments-comment-social-bar",
-      ".comments-comment-item__social-actions",
-      ".comments-comment-social-actions",
-      "[class*='social-bar']",
-      "[class*='actor']",
-      "[class*='timestamp']",
-    ].join(","))?.remove();
+    [
+      ".comments-comment-social-bar", ".comments-comment-item__social-actions",
+      ".comments-comment-social-actions", "[class*='social-bar']",
+      "[class*='actor']", "[class*='timestamp']", "[contenteditable]",
+    ].forEach(s => clone.querySelector(s)?.remove());
     return clone.textContent.trim().slice(0, 400);
+  }
+
+  function getCommentText(replyBtn) {
+    const item = replyBtn.isConnected ? replyBtn.closest(COMMENT_CONTAINERS) : null;
+    return getCommentTextFromItem(item);
+  }
+
+  // Extract comment text by walking around the reply box in the DOM
+  function extractCommentTextNearBox(box) {
+    const item = box.closest(COMMENT_CONTAINERS);
+    if (item) {
+      const t = getCommentTextFromItem(item);
+      if (t.length > 4) return t;
+    }
+    // Reply form sometimes rendered as sibling after the comment — walk up and check prev siblings
+    let node = box.parentElement;
+    for (let depth = 0; depth < 8 && node; depth++) {
+      let sib = node.previousElementSibling;
+      for (let i = 0; i < 4 && sib; i++) {
+        const textEl = sib.querySelector(
+          ".update-components-text, .comments-comment-item__main-content, .comments-comment-entity__content"
+        );
+        if (textEl) { const t = textEl.textContent.trim(); if (t.length > 4) return t.slice(0, 400); }
+        if (sib.matches?.(COMMENT_CONTAINERS)) {
+          const t = getCommentTextFromItem(sib);
+          if (t.length > 4) return t;
+        }
+        sib = sib.previousElementSibling;
+      }
+      node = node.parentElement;
+    }
+    return "";
   }
 
   function findReplyBox(anchor) {
@@ -901,38 +925,54 @@ Rules:
     }).then(resp => clean(resp.text));
   }
 
-  async function handleReplyClick(replyBtn, preCommentText, prePostEl) {
-    const commentItem = replyBtn.isConnected ? replyBtn.closest(COMMENT_CONTAINERS) : null;
-    const commentText = preCommentText || getCommentText(replyBtn);
+  // ── MutationObserver: detect reply box appearing (primary reply trigger) ──────
+  // This fires whenever LinkedIn renders the reply input — no click detection needed.
+
+  const seenReplyBoxes = new WeakSet();
+
+  async function onReplyBoxAdded(box) {
+    if (seenReplyBoxes.has(box)) return;
+    seenReplyBoxes.add(box);
+
+    await new Promise(r => setTimeout(r, 350));
+    if (!box.isConnected) return;
+
+    const commentText = extractCommentTextNearBox(box);
     if (!commentText || commentText.length < 4) return;
 
-    const postEl = prePostEl || findPostEl(replyBtn);
+    const postEl = findPostEl(box);
     const postText = postEl ? getPostText(postEl) : "";
 
+    closePicker();
     showPill(`${SPINNER} <span>Writing reply…</span>`);
 
     try {
       const reply = await generateReply(commentText, postText);
-
-      let tries = 0;
-      const t = setInterval(() => {
-        tries++;
-        const box = findReplyBox(commentItem);
-        if (box) {
-          clearInterval(t);
-          pasteInto(box, reply);
-          showSuccessPill(reply, box, "reply", commentText, "");
-        } else if (tries >= 25) {
-          clearInterval(t);
-          showPill(`<span style="color:#ef4444">⚠ Reply box not found</span>`, "#ef4444");
-          hidePill(3000);
-        }
-      }, 200);
+      if (!box.isConnected) return;
+      pasteInto(box, reply);
+      showSuccessPill(reply, box, "reply", commentText, "");
     } catch (e) {
       showPill(`<span style="color:#ef4444">⚠ ${escHtml(e.message)}</span>`, "#ef4444");
       hidePill(3000);
     }
   }
+
+  new MutationObserver(mutations => {
+    for (const m of mutations) {
+      for (const node of m.addedNodes) {
+        if (node.nodeType !== 1) continue;
+        const candidates = node.getAttribute?.("contenteditable") === "true"
+          ? [node]
+          : [...(node.querySelectorAll?.("div[contenteditable='true']") || [])];
+        for (const el of candidates) {
+          const ph = (el.getAttribute("data-placeholder") || "").toLowerCase();
+          if (ph.includes("reply") || ph.includes("add a reply") || ph.includes("write a reply")) {
+            onReplyBoxAdded(el);
+          }
+        }
+      }
+    }
+  }).observe(document.body, { childList: true, subtree: true });
 
   // ── Intercept Comment button clicks ──────────────────────────────────────
 
@@ -996,18 +1036,11 @@ Rules:
     return fallback;
   }
 
+  // Reply detection is handled by the MutationObserver above.
+  // This listener only handles the main post Comment button.
   document.addEventListener("click", (e) => {
     const btn = e.target.closest("button, [role='button']");
     if (!btn) return;
-
-    if (isReplyBtn(btn)) {
-      // Capture context NOW before LinkedIn re-renders and detaches the button node
-      const commentText = getCommentText(btn);
-      const postEl = findPostEl(btn);
-      setTimeout(() => handleReplyClick(btn, commentText, postEl), 650);
-      return;
-    }
-
     if (isMainPostCommentBtn(btn)) {
       const postEl = findPostEl(btn);
       setTimeout(() => generateAndInsert(postEl), 500);
