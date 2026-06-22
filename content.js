@@ -1003,6 +1003,8 @@ Rules:
     } catch (e) {
       showPill(`<span style="color:#ef4444">⚠ API: ${escHtml(e.message)}</span>`, "#ef4444");
       hidePill(6000);
+    } finally {
+      seenReplyBoxes.delete(box);
     }
   }
 
@@ -1039,7 +1041,7 @@ Rules:
         }
       }
 
-      if (box && !seenReplyBoxes.has(box)) {
+      if (box) {
         clearInterval(t);
         showPill(`[3] box found (try ${tries}) — calling API…`);
         await doReply(box, commentText, postText);
