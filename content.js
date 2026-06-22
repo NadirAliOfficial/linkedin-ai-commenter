@@ -986,11 +986,16 @@ Rules:
     const t = setInterval(async () => {
       tries++;
       const box = findVisibleReplyBox();
+      if (tries === 10) showPill(`🔍 Still searching reply box… (${tries * 200}ms)`);
+      if (tries === 20) showPill(`🔍 Still searching reply box… (${tries * 200}ms)`);
       if (box && !seenReplyBoxes.has(box)) {
         clearInterval(t);
+        showPill(`✅ Box found! Calling API…`);
         await doReply(box, commentText, postText);
       } else if (tries >= 30) {
         clearInterval(t);
+        showPill(`❌ Reply box NOT found after 6s — tell Nadir this step`, "#ef4444");
+        hidePill(8000);
       }
     }, 200);
   }
@@ -1111,6 +1116,7 @@ Rules:
     if (isReply) {
       const commentText = getCommentText(btn);
       console.log("[LCA] commentText captured:", JSON.stringify(commentText?.slice(0,80)));
+      showPill(`🔍 Click OK | text: "${escHtml(commentText?.slice(0,30) || 'EMPTY')}" | searching box…`);
       const postEl = findPostEl(btn);
       setTimeout(() => handleReplyClick(commentText, postEl), 500);
       return;
