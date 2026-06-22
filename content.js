@@ -901,12 +901,12 @@ Rules:
     }).then(resp => clean(resp.text));
   }
 
-  async function handleReplyClick(replyBtn) {
-    const commentItem = replyBtn.closest(COMMENT_CONTAINERS);
-    const commentText = getCommentText(replyBtn);
+  async function handleReplyClick(replyBtn, preCommentText, prePostEl) {
+    const commentItem = replyBtn.isConnected ? replyBtn.closest(COMMENT_CONTAINERS) : null;
+    const commentText = preCommentText || getCommentText(replyBtn);
     if (!commentText || commentText.length < 4) return;
 
-    const postEl = findPostEl(replyBtn);
+    const postEl = prePostEl || findPostEl(replyBtn);
     const postText = postEl ? getPostText(postEl) : "";
 
     showPill(`${SPINNER} <span>Writing reply…</span>`);
@@ -1001,8 +1001,10 @@ Rules:
     if (!btn) return;
 
     if (isReplyBtn(btn)) {
-      // Delay so LinkedIn renders the reply box first
-      setTimeout(() => handleReplyClick(btn), 650);
+      // Capture context NOW before LinkedIn re-renders and detaches the button node
+      const commentText = getCommentText(btn);
+      const postEl = findPostEl(btn);
+      setTimeout(() => handleReplyClick(btn, commentText, postEl), 650);
       return;
     }
 
