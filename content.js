@@ -944,100 +944,66 @@ Rules:
   async function doReply(box, commentText, postText) {
     if (seenReplyBoxes.has(box)) return;
     seenReplyBoxes.add(box);
-
-    closePicker();
-    showPill(`${SPINNER} <span>Writing reply…</span>`);
+    showPill(`[4] Calling API…`);
     try {
       const reply = await generateReply(commentText, postText);
-      if (!box.isConnected) return;
+      if (!box.isConnected) {
+        showPill(`<span style="color:#ef4444">⚠ Box closed before insert</span>`, "#ef4444");
+        hidePill(5000);
+        return;
+      }
       pasteInto(box, reply);
       showSuccessPill(reply, box, "reply", commentText, "");
     } catch (e) {
-      showPill(`<span style="color:#ef4444">⚠ ${escHtml(e.message)}</span>`, "#ef4444");
-      hidePill(3000);
+      showPill(`<span style="color:#ef4444">⚠ API: ${escHtml(e.message)}</span>`, "#ef4444");
+      hidePill(6000);
     }
   }
 
-  // ── Find any visible reply box on the page ───────────────────────────────
-  function findVisibleReplyBox() {
-    for (const el of document.querySelectorAll("div[contenteditable='true']")) {
-      if (el.offsetParent === null) continue; // not visible
-      const ph = (el.getAttribute("data-placeholder") || "").toLowerCase();
-      // Skip main comment boxes
-      if (ph.includes("write a comment") || ph.includes("add a comment")) continue;
-      // Accept if placeholder mentions reply OR element is inside a comment container
-      if (ph.includes("reply") || el.closest(COMMENT_CONTAINERS)) return el;
-    }
-    // Fallback: active focused editor that isn't the main comment box
-    const active = document.activeElement;
-    if (active?.getAttribute("contenteditable") === "true" && active !== document.body) {
-      const ph = (active.getAttribute("data-placeholder") || "").toLowerCase();
-      if (!ph.includes("write a comment") && !ph.includes("add a comment")) return active;
-    }
-    return null;
-  }
-
-  // ── Click-based reply ─────────────────────────────────────────────────────
   async function handleReplyClick(commentText, postEl) {
-    if (!commentText || commentText.length < 4) return;
     const postText = postEl ? getPostText(postEl) : "";
+
+    if (!commentText || commentText.length < 4) {
+      showPill(`<span style="color:#ef4444">⚠ [2] comment text EMPTY — selector mismatch</span>`, "#ef4444");
+      hidePill(8000);
+      return;
+    }
+
+    showPill(`[2] text ok — searching box…`);
 
     let tries = 0;
     const t = setInterval(async () => {
       tries++;
-      const box = findVisibleReplyBox();
-      if (tries === 10) showPill(`🔍 Still searching reply box… (${tries * 200}ms)`);
-      if (tries === 20) showPill(`🔍 Still searching reply box… (${tries * 200}ms)`);
+
+      // Strategy 1: focused active element
+      let box = null;
+      const active = document.activeElement;
+      if (active?.getAttribute("contenteditable") === "true" && active !== document.body) {
+        const ph = (active.getAttribute("data-placeholder") || "").toLowerCase();
+        if (!ph.includes("write a comment") && !ph.includes("add a comment")) box = active;
+      }
+
+      // Strategy 2: scan all visible contenteditable boxes
+      if (!box) {
+        for (const el of document.querySelectorAll("div[contenteditable='true']")) {
+          if (!el.offsetParent) continue;
+          const ph = (el.getAttribute("data-placeholder") || "").toLowerCase();
+          if (ph.includes("write a comment") || ph.includes("add a comment")) continue;
+          if (ph.includes("reply") || el.closest(COMMENT_CONTAINERS)) { box = el; break; }
+        }
+      }
+
       if (box && !seenReplyBoxes.has(box)) {
         clearInterval(t);
-        showPill(`✅ Box found! Calling API…`);
+        showPill(`[3] box found (try ${tries}) — calling API…`);
         await doReply(box, commentText, postText);
-      } else if (tries >= 30) {
+      } else if (tries >= 35) {
         clearInterval(t);
-        showPill(`❌ Reply box NOT found after 6s — tell Nadir this step`, "#ef4444");
+        showPill(`<span style="color:#ef4444">⚠ [3] box NOT found — placeholder mismatch?</span>`, "#ef4444");
         hidePill(8000);
       }
     }, 200);
   }
-
-  // ── MutationObserver: catches new reply boxes added to DOM ────────────────
-  function tryReplyBox(el) {
-    if (seenReplyBoxes.has(el)) return;
-    if (el.offsetParent === null) return;
-    const ph = (el.getAttribute("data-placeholder") || "").toLowerCase();
-    if (ph.includes("write a comment") || ph.includes("add a comment")) return;
-    if (!ph.includes("reply") && !el.closest(COMMENT_CONTAINERS)) return;
-    const commentText = extractCommentTextNearBox(el);
-    if (!commentText || commentText.length < 4) return;
-    const postEl = findPostEl(el);
-    const postText = postEl ? getPostText(postEl) : "";
-    setTimeout(() => doReply(el, commentText, postText), 300);
-  }
-
-  new MutationObserver(mutations => {
-    for (const m of mutations) {
-      // childList: new nodes added
-      if (m.type === "childList") {
-        for (const node of m.addedNodes) {
-          if (node.nodeType !== 1) continue;
-          const candidates = node.getAttribute?.("contenteditable") === "true"
-            ? [node]
-            : [...(node.querySelectorAll?.("div[contenteditable='true']") || [])];
-          candidates.forEach(tryReplyBox);
-        }
-      }
-      // attributes: existing node became visible or got a reply placeholder
-      if (m.type === "attributes" && m.target.nodeType === 1) {
-        const el = m.target;
-        if (el.getAttribute("contenteditable") === "true") tryReplyBox(el);
-      }
-    }
-  }).observe(document.body, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ["data-placeholder", "contenteditable", "aria-hidden", "style", "class"],
-  });
 
   // ── Intercept Comment button clicks ──────────────────────────────────────
 
@@ -1106,17 +1072,13 @@ Rules:
 
   document.addEventListener("click", (e) => {
     const btn = e.target.closest("button, [role='button']");
-    console.log("[LCA] click target:", e.target.tagName, e.target.className, "| btn found:", !!btn, btn?.textContent?.trim()?.slice(0,30), "| aria-label:", btn?.getAttribute("aria-label"));
-
     if (!btn) return;
 
     const isReply = isReplyBtn(btn);
-    console.log("[LCA] isReplyBtn:", isReply, "| isMainComment:", isMainPostCommentBtn(btn));
 
     if (isReply) {
       const commentText = getCommentText(btn);
-      console.log("[LCA] commentText captured:", JSON.stringify(commentText?.slice(0,80)));
-      showPill(`🔍 Click OK | text: "${escHtml(commentText?.slice(0,30) || 'EMPTY')}" | searching box…`);
+      showPill(`[1] Reply click detected — getting text…`);
       const postEl = findPostEl(btn);
       setTimeout(() => handleReplyClick(commentText, postEl), 500);
       return;
@@ -1128,19 +1090,5 @@ Rules:
     }
   }, true);
 
-  new MutationObserver(mutations => {
-    for (const m of mutations) {
-      for (const node of m.addedNodes) {
-        if (node.nodeType !== 1) continue;
-        const candidates = node.getAttribute?.("contenteditable") === "true"
-          ? [node]
-          : [...(node.querySelectorAll?.("div[contenteditable='true']") || [])];
-        for (const el of candidates) {
-          const ph = (el.getAttribute("data-placeholder") || "");
-          console.log("[LCA] MutationObserver: new contenteditable | placeholder:", JSON.stringify(ph), "| inComments:", !!el.closest(COMMENT_CONTAINERS));
-        }
-      }
-    }
-  }).observe(document.body, { childList: true, subtree: true });
 
 })();
