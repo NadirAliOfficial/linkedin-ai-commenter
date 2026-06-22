@@ -843,23 +843,44 @@ Rules:
     return t.length > 4 ? t.slice(0, 400) : "";
   }
 
+  // Selectors for the full comment ITEM — excludes action bars which are children, not wrappers
+  const COMMENT_ITEM_SELS = [
+    ".comments-comment-item", ".comments-comment-entity",
+    ".comments-comment-list__comment-item", ".comments-comment-item__condensed",
+    ".comments-reply-item",
+    ".comments-thread-item", ".comments-thread-entity",
+    "[data-test-id*='comment']",
+  ].join(",");
+
   function getCommentText(replyBtn) {
-    const item = replyBtn.isConnected ? replyBtn.closest(COMMENT_CONTAINERS) : null;
+    // Use COMMENT_ITEM_SELS (no action bars) so closest() walks past the bar to the wrapper
+    const item = replyBtn.isConnected ? replyBtn.closest(COMMENT_ITEM_SELS) : null;
     if (item) return getCommentTextFromItem(item);
 
-    // Fallback for SPA navigation: container class may differ — walk up manually
+    // Fallback for SPA navigation: walk up and look for comment-specific text elements
     const TEXT_SELS = [
-      ".update-components-text", ".comments-comment-item__main-content",
-      ".comments-comment-entity__content", ".comments-comment-content",
-      ".comments-comment-item__main-content--cr", "span.break-words",
+      ".comments-comment-item__main-content",
+      ".comments-comment-entity__content",
+      ".comments-comment-content",
+      ".comments-comment-item__main-content--cr",
     ];
     let node = replyBtn.parentElement;
-    for (let d = 0; d < 12 && node && node !== document.body; d++) {
+    for (let d = 0; d < 8 && node && node !== document.body; d++) {
       for (const sel of TEXT_SELS) {
-        for (const el of node.querySelectorAll(sel)) {
+        const el = node.querySelector(sel);
+        if (el) {
           const t = el.textContent.trim();
           if (t.length > 4) return t.slice(0, 400);
         }
+      }
+      // Check previous siblings for a comment text element
+      let sib = node.previousElementSibling;
+      for (let i = 0; i < 3 && sib; i++) {
+        for (const sel of TEXT_SELS) {
+          const el = sib.querySelector(sel);
+          if (el) { const t = el.textContent.trim(); if (t.length > 4) return t.slice(0, 400); }
+        }
+        sib = sib.previousElementSibling;
       }
       node = node.parentElement;
     }
