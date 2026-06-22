@@ -1058,11 +1058,16 @@ Rules:
 
   document.addEventListener("click", (e) => {
     const btn = e.target.closest("button, [role='button']");
+    console.log("[LCA] click target:", e.target.tagName, e.target.className, "| btn found:", !!btn, btn?.textContent?.trim()?.slice(0,30), "| aria-label:", btn?.getAttribute("aria-label"));
+
     if (!btn) return;
 
-    if (isReplyBtn(btn)) {
-      // Capture context immediately before LinkedIn re-renders the DOM
+    const isReply = isReplyBtn(btn);
+    console.log("[LCA] isReplyBtn:", isReply, "| isMainComment:", isMainPostCommentBtn(btn));
+
+    if (isReply) {
       const commentText = getCommentText(btn);
+      console.log("[LCA] commentText captured:", JSON.stringify(commentText?.slice(0,80)));
       const postEl = findPostEl(btn);
       setTimeout(() => handleReplyClick(commentText, postEl), 500);
       return;
@@ -1073,5 +1078,20 @@ Rules:
       setTimeout(() => generateAndInsert(postEl), 500);
     }
   }, true);
+
+  new MutationObserver(mutations => {
+    for (const m of mutations) {
+      for (const node of m.addedNodes) {
+        if (node.nodeType !== 1) continue;
+        const candidates = node.getAttribute?.("contenteditable") === "true"
+          ? [node]
+          : [...(node.querySelectorAll?.("div[contenteditable='true']") || [])];
+        for (const el of candidates) {
+          const ph = (el.getAttribute("data-placeholder") || "");
+          console.log("[LCA] MutationObserver: new contenteditable | placeholder:", JSON.stringify(ph), "| inComments:", !!el.closest(COMMENT_CONTAINERS));
+        }
+      }
+    }
+  }).observe(document.body, { childList: true, subtree: true });
 
 })();
