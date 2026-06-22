@@ -48,11 +48,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (lca_log.length > 500) lca_log.splice(0, lca_log.length - 500);
       chrome.storage.local.set({ lca_log });
     });
-    fetch("http://localhost:7331/log", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(message.entry),
-    }).catch(() => {});
     return;
   }
 

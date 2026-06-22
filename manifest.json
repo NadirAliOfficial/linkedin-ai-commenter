@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "LinkedIn Comment Assistant",
   "version": "2.0.0",
-  "description": "AI-powered LinkedIn comment assistant using local Ollama.",
+  "description": "AI-powered LinkedIn comment assistant. Generates context-aware comments using Groq AI.",
 
   "permissions": [
     "activeTab",
@@ -12,8 +12,7 @@
 
   "host_permissions": [
     "https://www.linkedin.com/*",
-    "https://api.groq.com/*",
-    "http://localhost:7331/*"
+    "https://api.groq.com/*"
   ],
 
   "content_scripts": [
