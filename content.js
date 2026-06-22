@@ -782,6 +782,7 @@ Rules:
 
   // Comment containers — same list used by isMainPostCommentBtn to exclude reply buttons
   const COMMENT_CONTAINERS = [
+    // Feed view
     ".comments-comment-item",
     ".comments-comment-entity",
     ".comments-comment-social-bar",
@@ -791,6 +792,10 @@ Rules:
     ".comments-comment-item__main-content",
     ".comments-comment-item__condensed",
     ".comments-reply-item",
+    // Notifications / post-detail view (--cr suffix variants)
+    ".comments-thread-item",
+    ".comments-thread-entity",
+    ".comments-comment-social-bar--cr",
     "[data-test-id*='comment']",
   ].join(",");
 
@@ -811,15 +816,24 @@ Rules:
       ".update-components-text",
       ".comments-comment-item__main-content",
       ".comments-comment-entity__content",
+      // --cr / thread view selectors
+      ".comments-comment-content",
+      ".comments-comment-item__main-content--cr",
+      "span.break-words",
     ].join(","));
-    if (specific) return specific.textContent.trim().slice(0, 400);
+    if (specific) {
+      const t = specific.textContent.trim();
+      if (t.length > 4) return t.slice(0, 400);
+    }
     const clone = item.cloneNode(true);
     [
-      ".comments-comment-social-bar", ".comments-comment-item__social-actions",
-      ".comments-comment-social-actions", "[class*='social-bar']",
-      "[class*='actor']", "[class*='timestamp']", "[contenteditable]",
+      ".comments-comment-social-bar", ".comments-comment-social-bar--cr",
+      ".comments-comment-item__social-actions", ".comments-comment-social-actions",
+      "[class*='social-bar']", "[class*='actor']", "[class*='timestamp']",
+      "[contenteditable]",
     ].forEach(s => clone.querySelector(s)?.remove());
-    return clone.textContent.trim().slice(0, 400);
+    const t = clone.textContent.trim();
+    return t.length > 4 ? t.slice(0, 400) : "";
   }
 
   function getCommentText(replyBtn) {
@@ -1007,6 +1021,9 @@ Rules:
       ".comments-comment-social-bar",
       ".comments-comment-list",
       ".comments-comments-list",
+      ".comments-thread-item",
+      ".comments-thread-entity",
+      ".comments-comment-social-bar--cr",
     ].join(","))) return false;
 
     // Walk up to 6 levels to find the main action bar.
