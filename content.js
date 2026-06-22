@@ -925,27 +925,14 @@ Rules:
     }).then(resp => clean(resp.text));
   }
 
-  // ── MutationObserver: detect reply box appearing (primary reply trigger) ──────
-  // This fires whenever LinkedIn renders the reply input — no click detection needed.
-
   const seenReplyBoxes = new WeakSet();
 
-  async function onReplyBoxAdded(box) {
+  async function doReply(box, commentText, postText) {
     if (seenReplyBoxes.has(box)) return;
     seenReplyBoxes.add(box);
 
-    await new Promise(r => setTimeout(r, 350));
-    if (!box.isConnected) return;
-
-    const commentText = extractCommentTextNearBox(box);
-    if (!commentText || commentText.length < 4) return;
-
-    const postEl = findPostEl(box);
-    const postText = postEl ? getPostText(postEl) : "";
-
     closePicker();
     showPill(`${SPINNER} <span>Writing reply…</span>`);
-
     try {
       const reply = await generateReply(commentText, postText);
       if (!box.isConnected) return;
@@ -957,6 +944,32 @@ Rules:
     }
   }
 
+  // ── Click-based reply (works when button is already hydrated) ─────────────
+  async function handleReplyClick(commentText, postEl) {
+    if (!commentText || commentText.length < 4) return;
+    const postText = postEl ? getPostText(postEl) : "";
+
+    // Poll for the reply box that LinkedIn will render after the click
+    let tries = 0;
+    const t = setInterval(async () => {
+      tries++;
+      const box = document.querySelector(
+        "div[contenteditable='true'][data-placeholder*='reply' i], " +
+        "div[contenteditable='true'][data-placeholder*='add a reply' i]"
+      ) || (() => {
+        const active = document.activeElement;
+        return (active?.getAttribute("contenteditable") === "true" && active !== document.body) ? active : null;
+      })();
+      if (box && !seenReplyBoxes.has(box)) {
+        clearInterval(t);
+        await doReply(box, commentText, postText);
+      } else if (tries >= 30) {
+        clearInterval(t);
+      }
+    }, 200);
+  }
+
+  // ── MutationObserver: backup trigger when click detection fails ───────────
   new MutationObserver(mutations => {
     for (const m of mutations) {
       for (const node of m.addedNodes) {
@@ -965,10 +978,17 @@ Rules:
           ? [node]
           : [...(node.querySelectorAll?.("div[contenteditable='true']") || [])];
         for (const el of candidates) {
+          if (seenReplyBoxes.has(el)) continue;
           const ph = (el.getAttribute("data-placeholder") || "").toLowerCase();
-          if (ph.includes("reply") || ph.includes("add a reply") || ph.includes("write a reply")) {
-            onReplyBoxAdded(el);
-          }
+          const inComments = !!el.closest(COMMENT_CONTAINERS);
+          if (!ph.includes("reply") && !ph.includes("add a reply") && !inComments) continue;
+          // Don't trigger on main post comment boxes
+          if (ph.includes("write a comment") || ph.includes("add a comment")) continue;
+          const commentText = extractCommentTextNearBox(el);
+          if (!commentText || commentText.length < 4) continue;
+          const postEl = findPostEl(el);
+          const postText = postEl ? getPostText(postEl) : "";
+          setTimeout(() => doReply(el, commentText, postText), 400);
         }
       }
     }
@@ -1036,11 +1056,18 @@ Rules:
     return fallback;
   }
 
-  // Reply detection is handled by the MutationObserver above.
-  // This listener only handles the main post Comment button.
   document.addEventListener("click", (e) => {
     const btn = e.target.closest("button, [role='button']");
     if (!btn) return;
+
+    if (isReplyBtn(btn)) {
+      // Capture context immediately before LinkedIn re-renders the DOM
+      const commentText = getCommentText(btn);
+      const postEl = findPostEl(btn);
+      setTimeout(() => handleReplyClick(commentText, postEl), 500);
+      return;
+    }
+
     if (isMainPostCommentBtn(btn)) {
       const postEl = findPostEl(btn);
       setTimeout(() => generateAndInsert(postEl), 500);
