@@ -223,13 +223,24 @@ Rules:
     try { chrome.runtime?.sendMessage({ type: "log", entry: { ts: Date.now(), ...entry } }); } catch (_) {}
   }
 
-  // Guard against chrome.runtime becoming undefined after extension reload
-  function runtimeSendMessage(payload) {
+  // Warm up the service worker immediately so first-use API calls don't race with its cold start
+  try {
+    chrome.runtime.sendMessage({ type: "ping" }, () => { chrome.runtime.lastError; });
+  } catch (_) {}
+
+  function runtimeSendMessage(payload, retries = 1) {
     return new Promise((resolve, reject) => {
       try {
         if (!chrome?.runtime?.sendMessage) throw new Error("Extension reloaded — refresh page");
         chrome.runtime.sendMessage(payload, (resp) => {
-          if (chrome.runtime.lastError) return reject(new Error("Refresh page and retry"));
+          if (chrome.runtime.lastError) {
+            if (retries > 0) {
+              setTimeout(() => runtimeSendMessage(payload, retries - 1).then(resolve).catch(reject), 800);
+            } else {
+              reject(new Error("Try again — service worker was starting up"));
+            }
+            return;
+          }
           if (!resp?.ok) return reject(new Error(resp?.error || "API error"));
           resolve(resp);
         });

@@ -37,6 +37,11 @@ async function callGroq(messages, { temperature = 0.65, max_tokens, signal } = {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "ping") {
+    sendResponse({ ok: true });
+    return;
+  }
+
   if (message.type === "log") {
     chrome.storage.local.get({ lca_log: [] }, ({ lca_log }) => {
       lca_log.push(message.entry);
