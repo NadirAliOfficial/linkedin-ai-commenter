@@ -1,277 +1,181 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LinkedIn Comment Assistant</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<title>LinkedIn Comment Assistant</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
-      width: 280px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #ffffff;
-      color: #1d1d1d;
-    }
+body {
+  width: 320px;
+  background: #0d0d0d;
+  color: #d4d4d4;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+}
 
-    /* Header */
-    .header {
-      background: #0a66c2;
-      padding: 14px 16px 12px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+.header {
+  padding: 16px 16px 14px;
+  border-bottom: 1px solid #1a1a1a;
+  display: flex; align-items: center; gap: 12px;
+}
+.logo {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, #0a66c2, #004182);
+  border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px; color: #fff;
+  box-shadow: 0 3px 14px rgba(10,102,194,0.38);
+  flex-shrink: 0;
+}
+.header-info { flex: 1; }
+.header-title { font-size: 15px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+.header-sub { font-size: 11px; color: #555; margin-top: 2px; }
 
-    .header-icon {
-      width: 28px;
-      height: 28px;
-      background: #ffffff;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
+.card {
+  background: #111; border: 1px solid #222;
+  border-radius: 10px; padding: 13px 14px; margin: 12px 14px 0;
+}
+.card:last-of-type { margin-bottom: 12px; }
+.card-title {
+  font-size: 10px; font-weight: 700; color: #585858;
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;
+}
 
-    .header-icon svg {
-      width: 18px;
-      height: 18px;
-    }
+/* Toggle */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; }
+.toggle-label { font-size: 13px; color: #c8c8c8; }
+.toggle-sub { font-size: 11px; color: #555; margin-top: 2px; }
+.switch { position: relative; width: 38px; height: 21px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute; inset: 0; background: #222; border-radius: 21px;
+  cursor: pointer; transition: 0.2s; border: 1px solid #2a2a2a;
+}
+.slider:before {
+  content: ''; position: absolute;
+  width: 15px; height: 15px; left: 2px; top: 2px;
+  background: #555; border-radius: 50%; transition: 0.2s;
+}
+input:checked + .slider { background: #0d1e2e; border-color: #0a66c2; }
+input:checked + .slider:before { background: #0a66c2; transform: translateX(17px); }
 
-    .header-text h1 {
-      font-size: 13px;
-      font-weight: 700;
-      color: #ffffff;
-      line-height: 1.2;
-    }
+/* API Key */
+.inp {
+  width: 100%; background: #0d0d0d; border: 1px solid #2e2e2e;
+  border-radius: 7px; color: #e0e0e0; padding: 7px 36px 7px 10px;
+  font-size: 12.5px; outline: none; font-family: inherit; transition: border 0.15s;
+}
+.inp:focus { border-color: #0a66c2; }
+.inp::placeholder { color: #484848; }
+.key-row { position: relative; margin-bottom: 8px; }
+.eye-btn {
+  position: absolute; right: 9px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: #555; cursor: pointer; font-size: 13px; padding: 2px;
+}
+.eye-btn:hover { color: #999; }
 
-    .header-text p {
-      font-size: 11px;
-      color: rgba(255,255,255,0.75);
-      margin-top: 1px;
-    }
+.btn-row { display: flex; gap: 8px; margin-top: 10px; }
+.btn {
+  flex: 1; padding: 7px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: all 0.15s; border: none;
+}
+.btn-primary { background: #0a66c2; color: #fff; }
+.btn-primary:hover { background: #004182; }
+.btn-secondary { background: #141414; border: 1px solid #232323; color: #666; }
+.btn-secondary:hover { border-color: #3a3a3a; color: #ccc; }
+#key-status { font-size: 11px; margin-top: 6px; min-height: 15px; }
 
-    /* Status pill */
-    .status-section {
-      padding: 12px 16px;
-      border-bottom: 1px solid #f0f0f0;
-    }
+/* Steps */
+.steps { display: flex; flex-direction: column; gap: 9px; }
+.step { display: flex; align-items: flex-start; gap: 10px; }
+.step-num {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #0d1e2e; border: 1px solid #0a66c2;
+  color: #0a66c2; font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.step-text { font-size: 12px; color: #666; line-height: 1.45; }
+.step-text strong { color: #b0b0b0; }
 
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      font-weight: 500;
-      padding: 4px 10px;
-      border-radius: 20px;
-      background: #e6f3e6;
-      color: #057642;
-    }
+/* Open button */
+.open-btn {
+  display: block; margin: 12px 14px 0;
+  padding: 9px; background: #0a66c2; color: #fff;
+  font-size: 12px; font-weight: 600; border: none; border-radius: 8px;
+  cursor: pointer; text-align: center; text-decoration: none;
+  transition: background 0.15s;
+}
+.open-btn:hover { background: #004182; }
 
-    .status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #057642;
-    }
-
-    /* How to use */
-    .section {
-      padding: 12px 16px;
-      border-bottom: 1px solid #f0f0f0;
-    }
-
-    .section-title {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #8a8a8a;
-      margin-bottom: 8px;
-    }
-
-    .steps {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-    }
-
-    .steps li {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      font-size: 12px;
-      color: #444;
-      line-height: 1.4;
-    }
-
-    .step-num {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: #0a66c2;
-      color: #fff;
-      font-size: 10px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      margin-top: 0px;
-    }
-
-    /* Safety note */
-    .safety {
-      padding: 10px 16px;
-      background: #fff8e1;
-      border-top: 1px solid #ffe082;
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-    }
-
-    .safety-icon {
-      font-size: 14px;
-      flex-shrink: 0;
-      margin-top: 1px;
-    }
-
-    .safety p {
-      font-size: 11px;
-      color: #795548;
-      line-height: 1.4;
-    }
-
-    /* Footer */
-    .footer {
-      padding: 8px 16px;
-      text-align: center;
-      font-size: 10px;
-      color: #bbb;
-    }
-
-    /* Open LinkedIn button */
-    .open-btn {
-      display: block;
-      width: calc(100% - 32px);
-      margin: 0 16px 12px;
-      padding: 8px;
-      background: #0a66c2;
-      color: #fff;
-      font-size: 12px;
-      font-weight: 600;
-      border: none;
-      border-radius: 20px;
-      cursor: pointer;
-      text-align: center;
-      text-decoration: none;
-    }
-
-    .open-btn:hover {
-      background: #004182;
-    }
-
-    /* API key input */
-    .key-input {
-      width: 100%;
-      padding: 7px 10px;
-      font-size: 12px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      outline: none;
-      color: #1d1d1d;
-      font-family: monospace;
-      letter-spacing: 0.03em;
-    }
-
-    .key-input:focus {
-      border-color: #0a66c2;
-    }
-  </style>
+.footer {
+  padding: 10px 16px; border-top: 1px solid #1e1e1e; margin-top: 12px;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 11px; color: #555;
+}
+.footer a { color: #666; text-decoration: none; }
+.footer a:hover { color: #0a66c2; }
+.footer-links { display: flex; gap: 12px; }
+</style>
 </head>
 <body>
-  <!-- Header -->
-  <div class="header">
-    <div class="header-icon">
-      <svg viewBox="0 0 24 24" fill="#0a66c2" xmlns="http://www.w3.org/2000/svg">
-        <path d="M20 2H4C2.9 2 2 2.9 2 4V20C2 21.1 2.9 22 4 22H20C21.1 22 22 21.1 22 20V4C22 2.9 21.1 2 20 2ZM8.5 18H6V10H8.5V18ZM7.25 8.75C6.42 8.75 5.75 8.08 5.75 7.25C5.75 6.42 6.42 5.75 7.25 5.75C8.08 5.75 8.75 6.42 8.75 7.25C8.75 8.08 8.08 8.75 7.25 8.75ZM18 18H15.5V13.5C15.5 12.67 14.83 12 14 12C13.17 12 12.5 12.67 12.5 13.5V18H10V10H12.5V11.08C13.14 10.41 14.06 10 15 10C16.66 10 18 11.34 18 13V18Z"/>
-      </svg>
+
+<div class="header">
+  <div class="logo">in</div>
+  <div class="header-info">
+    <div class="header-title">Comment Assistant</div>
+    <div class="header-sub">Powered by Groq AI</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Extension</div>
+  <div class="toggle-row">
+    <div>
+      <div class="toggle-label">Enable on LinkedIn</div>
+      <div class="toggle-sub">Show AI comment buttons on posts</div>
     </div>
-    <div class="header-text">
-      <h1>Comment Assistant</h1>
-      <p>For LinkedIn Feed</p>
-    </div>
+    <label class="switch">
+      <input type="checkbox" id="lcaEnabled" checked>
+      <span class="slider"></span>
+    </label>
   </div>
+</div>
 
-  <!-- Status -->
-  <div class="status-section">
-    <div class="status-pill">
-      <div class="status-dot"></div>
-      Active on LinkedIn
-    </div>
+<div class="card">
+  <div class="card-title">Groq API Key</div>
+  <div class="key-row">
+    <input type="password" class="inp" id="api-key-input" placeholder="gsk_..." autocomplete="off">
+    <button class="eye-btn" id="eye-btn">◉</button>
   </div>
-
-  <!-- How to use -->
-  <div class="section">
-    <div class="section-title">How to Use</div>
-    <ol class="steps">
-      <li><span class="step-num">1</span> Open your LinkedIn feed and scroll</li>
-      <li><span class="step-num">2</span> Find the Quick Comment bar under any post</li>
-      <li><span class="step-num">3</span> Pick a tone: Support, Insightful, Agree, Question, Congratulate, Challenge, Experience, or Add Value</li>
-      <li><span class="step-num">4</span> Review the generated comment</li>
-      <li><span class="step-num">5</span> Click "Insert Comment" to paste it in the box</li>
-      <li><span class="step-num">6</span> Press LinkedIn's own Post button to publish</li>
-    </ol>
+  <div class="btn-row">
+    <button class="btn btn-primary" id="save-key-btn">◆ Save Key</button>
+    <button class="btn btn-secondary" id="clear-key-btn">Clear</button>
   </div>
+  <div id="key-status"></div>
+</div>
 
-  <!-- Open LinkedIn -->
-  <a class="open-btn" href="https://www.linkedin.com/feed/" target="_blank">
-    Open LinkedIn Feed →
-  </a>
+<a class="open-btn" href="https://www.linkedin.com/feed/" target="_blank">Open LinkedIn Feed →</a>
 
-  <!-- Stats -->
-  <div class="section">
-    <div class="section-title">Performance Stats</div>
-    <div id="stats-body" style="font-size:11px;color:#aaa;">Loading…</div>
+<div class="card" style="margin-top:12px;">
+  <div class="card-title">How to Use</div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-text">Scroll your LinkedIn feed and click <strong>Comment</strong> on any post</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-text">An AI-generated comment appears — review it in the pill bar</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-text">Click <strong>Insert</strong> or <strong>↺ Retry</strong> for a new one, then post</div></div>
   </div>
+</div>
 
-  <!-- Analyze & Improve -->
-  <div class="section" id="analyze-section" style="display:none;">
-    <div class="section-title">AI Self-Improvement</div>
-    <p style="font-size:11px;color:#666;margin-bottom:8px;line-height:1.4;">Groq will review your failure log and generate new rules to improve comment quality.</p>
-    <button id="analyze-btn" style="width:100%;background:#0a66c2;color:#fff;border:none;border-radius:20px;padding:7px;font-size:12px;font-weight:600;cursor:pointer;">Analyze failures</button>
-    <div id="analyze-result" style="margin-top:8px;display:none;"></div>
+<div class="footer">
+  <span>By <a href="https://www.theteamnak.com/" target="_blank">Nadir Ali Khan</a></span>
+  <div class="footer-links">
+    <a href="https://www.theteamnak.com/" target="_blank">Website</a>
+    <a href="https://github.com/NadirAliOfficial" target="_blank">GitHub</a>
   </div>
+</div>
 
-  <!-- Current learned rules -->
-  <div class="section" id="rules-section" style="display:none;">
-    <div class="section-title">Active learned rules</div>
-    <div id="rules-body" style="font-size:11px;color:#333;white-space:pre-wrap;line-height:1.5;background:#f0f7ff;border-radius:6px;padding:7px 9px;margin-bottom:6px;"></div>
-    <button id="clear-rules-btn" style="font-size:10px;color:#bbb;background:none;border:none;cursor:pointer;padding:0;">Remove learned rules</button>
-  </div>
-
-  <!-- API Key Settings -->
-  <div class="section">
-    <div class="section-title">Groq API Key</div>
-    <p style="font-size:11px;color:#666;margin-bottom:8px;line-height:1.4;">Enter your own key to use instead of the built-in shared keys. Get one free at <span style="color:#0a66c2;">console.groq.com</span>.</p>
-    <input id="api-key-input" class="key-input" type="password" placeholder="gsk_..." autocomplete="off" />
-    <div style="display:flex;gap:8px;margin-top:6px;">
-      <button id="save-key-btn" style="flex:1;background:#0a66c2;color:#fff;border:none;border-radius:12px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;">Save key</button>
-      <button id="clear-key-btn" style="background:#eee;color:#666;border:none;border-radius:12px;padding:5px 10px;font-size:11px;cursor:pointer;">Clear</button>
-    </div>
-    <div id="key-status" style="font-size:11px;margin-top:6px;min-height:16px;"></div>
-  </div>
-
-  <!-- Safety note -->
-  <div class="safety">
-    <span class="safety-icon">🔒</span>
-    <p>This extension never posts automatically. You are always in full control.</p>
-  </div>
-
-  <div class="footer">v2.0.0 · Powered by Groq API</div>
-  <script src="popup.js"></script>
+<script src="popup.js"></script>
 </body>
 </html>

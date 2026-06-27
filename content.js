@@ -3,6 +3,14 @@
 
   const MODEL = "llama-3.3-70b-versatile";
 
+  let lcaEnabled = true;
+  try {
+    chrome.storage?.local?.get({ lcaEnabled: true }, (d) => { lcaEnabled = d.lcaEnabled !== false; });
+    chrome.storage?.onChanged?.addListener((changes, area) => {
+      if (area === "local" && "lcaEnabled" in changes) lcaEnabled = changes.lcaEnabled.newValue !== false;
+    });
+  } catch (_) {}
+
   // ── Prompts ───────────────────────────────────────────────────────────────
 
   let learnedRules = "";
@@ -834,6 +842,7 @@ Rules:
   }
 
   document.addEventListener("click", (e) => {
+    if (!lcaEnabled) return;
     const btn = e.target.closest("button, [role='button']");
     if (!btn) return;
     if (isMainPostCommentBtn(btn)) {
