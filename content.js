@@ -32,6 +32,7 @@ Rules:
 - Make a genuine observation tied to something SPECIFIC in the post — a number, a named thing, a concrete situation, a decision. Never write something that could fit any other post.
 - BAD (too vague, fits any post): "This shift is happening much faster than expected." / "That's a really big cultural change happening quickly."
 - GOOD (post-specific): "The gap between devs who use AI and those who don't is already showing up in standups, Sara." — references the actual claim from the post.
+- For posts pitching a service or skill (freelance offers, "let's talk", hashtags naming a tool/field): do NOT compliment the general skill or say it's "in demand" — that fits any post about that field. React to the actual sentence, joke, or claim the poster wrote instead. BAD: "Your n8n skills are highly sought after." GOOD: react to the specific situation described, e.g. the irony of building tools and waiting for someone to ask for one.
 - ACHIEVEMENT POSTS — ONLY these qualify: promotion, new job/role, certification, degree, graduation, revenue milestone, funding, award. Use "Congrats [Name]" followed immediately by the specific milestone. Example: "Congrats Raj — Senior Engineer in 3 years is fast." Keep it 5–9 words.
 - NOT achievements: building a website, completing a project/task, shipping a feature, finishing an internship task. For those, write a specific observation — no Congrats.
 - NEVER refer to the person in third person — no "Sara did X", "Usman's product", "Welsh's approach", "his decision", "her post". The name must only appear as a direct address (e.g., "Raj," at the start or ", Raj." at the end) — once, or not at all.
@@ -90,6 +91,14 @@ Rules:
       { role: "user",      content: "Post: Just sat through a 3-hour meeting that could have been a 2-line email.\nPoster's first name: Beth\nLength: 8–12 words.\nComment:" },
       { role: "assistant", content: "A 2-line email and everyone would've actually read it, Beth." },
     ],
+    selfpromo: [
+      { role: "user",      content: "Post: Spent hours building automations... Now waiting for someone to say, Can you build one for us? That's freelancing. If you're looking to automate any part of your business, let's talk.\nPoster's first name: Maryam\nLength: 8–12 words.\nComment:" },
+      { role: "assistant", content: "The building is the easy part — waiting for the ask is the real grind, Maryam." },
+      { role: "user",      content: "Post: We help businesses save 20+ hours a week with custom automation workflows. DM me if you want to see how.\nPoster's first name: Farhan\nLength: 8–12 words.\nComment:" },
+      { role: "assistant", content: "20 hours a week saved is the kind of number that gets forwarded to a boss, Farhan." },
+      { role: "user",      content: "Post: Open to new freelance projects in web scraping and data automation. Reach out if you have a use case.\nPoster's first name: Dina\nLength: 8–12 words.\nComment:" },
+      { role: "assistant", content: "Most people don't know they need scraping until the manual version breaks, Dina." },
+    ],
   };
 
   // ── Auto-detect best tone ─────────────────────────────────────────────────
@@ -111,6 +120,14 @@ Rules:
       return "support";
     if (/\b(😂|🤣|lol|hilarious|funny|ironic|meanwhile|plot twist)\b/.test(t))
       return "funny";
+    // Service pitch / self-promo post — CTA + contact method + offer language.
+    // Needs a CTA/contact signal AND an offer signal so normal posts that merely
+    // mention a link or an email don't get misclassified.
+    const hasCTA = /\b(dm me|let'?s talk|book a call|reach out|schedule a call|drop a comment|comment below|send me a message|message me|get in touch)\b/i.test(t)
+      || /[\w.+-]+@[\w-]+\.[a-z]{2,}/i.test(t)
+      || /(https?:\/\/|www\.)\S+|\b\w+\.(com|io|ai|co|dev)\b/i.test(t);
+    const hasOffer = /\b(automate|automation|workflow|i (help|build|offer)|we (help|build|offer)|available for|open to work|hire me|freelanc|custom solution|save (you |businesses )?\d+\+? hours)\b/i.test(t);
+    if (hasCTA && hasOffer) return "selfpromo";
     // Post ends with a question → direct answer tone
     if (/\?\s*$/.test(text.trim())) return "insightful";
     return "insightful";
@@ -190,6 +207,11 @@ Rules:
     /\bgot (a great|an amazing|a fantastic|a good) (hire|employee|team member|addition)\b/i,
     /\b(lowkey |always )?(crushing|killing) it\b/i,
     /\bgreat (persistence|effort|job|work|mindset|attitude|stuff)\b/i,
+    // Skill/expertise compliments that praise the general field, not the post's specific content
+    /\byour .{0,25}skills? (are|is) (highly sought after|in (high|huge) demand|impressive|valuable|excellent|top.?notch|rare)\b/i,
+    /\byou clearly know your (stuff|craft|trade)\b/i,
+    /\byour expertise (in|with) .{0,30}(shows|shines|is evident)\b/i,
+    /\b(skills? like (that|these|yours)) (are|is) (rare|valuable|in demand)\b/i,
     // "for me" endings — private-chat signal
     /\bfor me[,.]?\s*\w{0,20}\.?\s*$/i,
     // Generic advice that fits any post ("X is a great way to Y")
@@ -294,19 +316,26 @@ Rules:
 
   async function generateVariants(tone, postText, firstName) {
     const userMsg = buildUserMsg(tone, postText, firstName);
+    const correctionMsg = userMsg + "\nYour previous attempt was too generic or praised the general topic instead of the post. Reference a specific word, number, or phrase FROM THE POST TEXT ABOVE — not the poster's field, skill, or hashtags.";
+
     const firstAttempt = await sendOllamaRequest(userMsg, tone, 0.7);
     const filterTriggered = isGeneric(firstAttempt) || !isRelevant(firstAttempt, postText);
     let finalComment = firstAttempt;
     let filterFixed = false;
+
     if (filterTriggered) {
-      try {
-        const retry = await sendOllamaRequest(userMsg, tone, 0.75);
-        if (!isGeneric(retry) && isRelevant(retry, postText)) {
-          finalComment = retry;
-          filterFixed = true;
-        }
-      } catch (_) {}
+      let best = firstAttempt;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const retry = await sendOllamaRequest(correctionMsg, tone, 0.75 + attempt * 0.05);
+          const retryOk = !isGeneric(retry) && isRelevant(retry, postText);
+          best = retry; // always prefer the most recent, most-constrained attempt
+          if (retryOk) { finalComment = retry; filterFixed = true; break; }
+        } catch (_) {}
+      }
+      if (!filterFixed) finalComment = best; // last attempt is more constrained than the first, even if imperfect
     }
+
     logEvent({ kind: "gen", tone, firstName, postFull: postText, postSnippet: postText.slice(0, 80), firstAttempt, comment: finalComment, filterTriggered, filterFixed });
     return [finalComment];
   }
