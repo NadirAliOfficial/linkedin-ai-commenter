@@ -194,7 +194,7 @@ async function callGroq(messages, temp = 0.7) {
     const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + getKey() },
-      body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages, temperature: temp, max_tokens: 90, stream: false }),
+      body: JSON.stringify({ model: "openai/gpt-oss-120b", messages, temperature: temp, max_tokens: 90, stream: false }),
     });
     if (r.status === 429) { rotateKey(); continue; }
     if (!r.ok) throw new Error("Groq " + r.status);

@@ -3,3 +3,6 @@
 *.crx
 node_modules/
 .env
+config.js
+config.json
+logs/

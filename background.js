@@ -14,7 +14,7 @@ async function callGroq(messages, { temperature = 0.65, max_tokens, signal } = {
   const key = await getUserKey();
   if (!key) throw new Error("No API key — add your Groq key in the extension popup.");
   const body = {
-    model: "llama-3.3-70b-versatile",
+    model: "openai/gpt-oss-120b",
     messages,
     temperature,
     ...(max_tokens ? { max_tokens } : {}),
