@@ -28,8 +28,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Save key
   document.getElementById("save-key-btn").addEventListener("click", () => {
-    const val = keyInput.value.trim();
+    // Strip anything outside printable ASCII — pasting from WhatsApp/chat apps can
+    // silently inject invisible Unicode formatting characters that break the
+    // Authorization header (fetch throws "non ISO-8859-1 code point").
+    const val = keyInput.value.replace(/[^\x20-\x7E]/g, "").trim();
     if (!val) { keyStatus.innerHTML = `<span style="color:#ef4444;">Enter a key first.</span>`; return; }
+    keyInput.value = val;
     chrome.storage.local.set({ lca_groq_key: val }, () => {
       keyStatus.innerHTML = `<span style="color:#0a66c2;font-weight:600;">✓ Saved</span>`;
     });
