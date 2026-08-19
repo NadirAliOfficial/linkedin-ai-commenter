@@ -17,6 +17,7 @@ async function callGroq(messages, { temperature = 0.65, max_tokens, signal } = {
     model: "openai/gpt-oss-120b",
     messages,
     temperature,
+    reasoning_effort: "low", // GPT-OSS reasoning tokens count against max_tokens — keep low for short outputs
     ...(max_tokens ? { max_tokens } : {}),
     stream: false,
   };
